@@ -74,8 +74,8 @@ Legend: ✅ working & verified live · 🟡 partial · ⏳ planned · ⛔ exclud
 | Pinned tabs (tag / search / all-followed-tags) | ✅ live-verified (40–41 posts aggregated) |
 | Per-tab Latest/Top sort, persisted | ✅ |
 | Add / unpin dialogs | ✅ |
-| Keyword filtering | ⏳ |
-| Local bookmarks | ⏳ |
+| Keyword filtering | ✅ live-verified (hidden banner + Show hidden) |
+| Local bookmarks | ✅ live-verified (seeded + rendered, offline) |
 | Session management | 🟡 sign-in + browser fallback; multi-account ⏳ |
 
 ## 4. Tests

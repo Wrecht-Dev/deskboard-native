@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Deskboard.App.Services;
@@ -13,6 +14,8 @@ public sealed partial class SettingsViewModel : ObservableObject
     public TumblrClient Client => _client;
 
     public ObservableCollection<string> Blogs { get; } = new();
+    public ObservableCollection<string> MutedWords { get; } = new();
+    public FeedFilter Filters { get; }
 
     [ObservableProperty] private string _identity = "";
     [ObservableProperty] private string _sessionState = "";
@@ -22,15 +25,50 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     public event EventHandler? CloseRequested;
 
-    public SettingsViewModel(TumblrClient client, string identity, System.Collections.Generic.IEnumerable<string> blogs)
+    [ObservableProperty] private string _newMutedWord = "";
+    [ObservableProperty] private bool _filtersEnabled;
+
+    public SettingsViewModel(TumblrClient client, string identity, System.Collections.Generic.IEnumerable<string> blogs,
+        FeedFilter? filters = null)
     {
         _client = client;
+        Filters = filters ?? FeedFilter.Load();
+        FiltersEnabled = Filters.Enabled;
+        foreach (var word in Filters.MutedWords) MutedWords.Add(word);
         Identity = string.IsNullOrEmpty(identity) ? "(signed out)" : identity;
         SessionState = client.HasSession
             ? "Signed in with your browser session (cookies + CSRF verified on writes)."
             : "No session found — sign-in is read from your Firefox profile on first request.";
         foreach (var blog in blogs) Blogs.Add(blog);
         IsDark = AppSettings.Theme != "light";
+    }
+
+    partial void OnFiltersEnabledChanged(bool value)
+    {
+        Filters.Enabled = value;
+        Filters.Save();
+    }
+
+    [RelayCommand]
+    private void AddMutedWord()
+    {
+        var word = NewMutedWord.Trim();
+        if (word.Length == 0) return;
+        if (!MutedWords.Contains(word, System.StringComparer.OrdinalIgnoreCase))
+        {
+            MutedWords.Add(word);
+            Filters.MutedWords = MutedWords.ToList();
+            Filters.Save();
+        }
+        NewMutedWord = "";
+    }
+
+    [RelayCommand]
+    private void RemoveMutedWord(string word)
+    {
+        MutedWords.Remove(word);
+        Filters.MutedWords = MutedWords.ToList();
+        Filters.Save();
     }
 
     [RelayCommand]

@@ -98,6 +98,14 @@
         </Grid>
       </Border>
 
+      <Border DockPanel.Dock="Top" Margin="34,0,34,8" IsVisible="{Binding HasHiddenPosts}">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Text="{Binding FilterNote}" Classes="dim" FontSize="12" VerticalAlignment="Center" />
+          <Button Grid.Column="1" Content="Show hidden" FontSize="12" Padding="10,4"
+                  Command="{Binding ShowFilteredCommand}" />
+        </Grid>
+      </Border>
+
       <Border DockPanel.Dock="Top" Margin="34,0,34,8" IsVisible="{Binding IsLibraryPage}">
         <StackPanel Orientation="Horizontal" Spacing="6">
           <Button Content="Inbox" Classes="chip" FontSize="13" Command="{Binding SetLibraryCommand}" CommandParameter="inbox" />
@@ -262,6 +270,31 @@
           </StackPanel>
         </ScrollViewer>
   
+        <ScrollViewer IsVisible="{Binding IsBookmarksPage}" Padding="34,0,34,24">
+          <StackPanel Spacing="2" MaxWidth="640">
+            <ItemsControl ItemsSource="{Binding Bookmarks}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Button Click="OnOpenBookmark" Background="Transparent" Padding="10"
+                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                      <StackPanel Spacing="2">
+                        <TextBlock Text="{Binding BlogName}" FontWeight="SemiBold" FontSize="14" />
+                        <TextBlock Text="{Binding Summary}" Classes="dim" FontSize="12"
+                                   TextTrimming="CharacterEllipsis" MaxLines="2" />
+                      </StackPanel>
+                      <TextBlock Grid.Column="1" Text="{Binding SavedLabel}" Classes="dim"
+                                 FontSize="11" VerticalAlignment="Top" />
+                    </Grid>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Text="Nothing saved yet — tap ☆ on any post." Classes="dim" FontSize="12"
+                       Margin="10,12,0,0" IsVisible="{Binding !HasBookmarks}" />
+          </StackPanel>
+        </ScrollViewer>
+
         <!-- conversations list -->
         <ScrollViewer IsVisible="{Binding IsMessagesPage}" Padding="34,0,34,24">
           <StackPanel Spacing="2" MaxWidth="640">

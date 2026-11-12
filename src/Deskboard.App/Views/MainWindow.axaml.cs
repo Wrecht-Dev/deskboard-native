@@ -72,7 +72,7 @@ public partial class MainWindow : Window
     {
         if (DataContext is not MainViewModel vm) return;
         await vm.EnsureIdentityAsync();
-        var settings = new SettingsViewModel(vm.Client, vm.Identity, vm.Blogs);
+        var settings = new SettingsViewModel(vm.Client, vm.Identity, vm.Blogs, vm.Filters);
         var window = new SettingsWindow { DataContext = settings };
         await window.ShowDialog(this);
     }
@@ -153,6 +153,18 @@ public partial class MainWindow : Window
         var dialog = new AddPinnedTabWindow();
         await dialog.ShowDialog(this);
         if (dialog.Result is { } tab) vm.AddPinnedTab(tab);
+    }
+
+    private void OnToggleBookmark(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainViewModel vm) return;
+        if ((sender as Control)?.DataContext is PostItemViewModel item) vm.ToggleBookmark(item);
+    }
+
+    private void OnOpenBookmark(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainViewModel vm) return;
+        if ((sender as Control)?.DataContext is Services.Bookmark bookmark) vm.OpenBookmark(bookmark);
     }
 
     private void OnSearchKey(object? sender, Avalonia.Input.KeyEventArgs e)

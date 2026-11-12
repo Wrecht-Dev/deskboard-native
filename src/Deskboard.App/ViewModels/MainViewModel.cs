@@ -76,6 +76,14 @@ public sealed partial class PostItemViewModel : ObservableObject
     [ObservableProperty] private bool _isLiked;
     [ObservableProperty] private string _likeGlyph = "♡";
     [ObservableProperty] private string _likeCountLabel = "";
+    [ObservableProperty] private string _bookmarkGlyph = "☆";
+    public bool IsBookmarked { get; private set; }
+
+    public void RefreshBookmark(bool saved)
+    {
+        IsBookmarked = saved;
+        BookmarkGlyph = saved ? "★" : "☆";
+    }
 
     public PostItemViewModel(Post post, MainViewModel host)
     {
@@ -87,6 +95,7 @@ public sealed partial class PostItemViewModel : ObservableObject
         NoteCount = post.NoteCount;
         ReblogCount = post.ReblogCount;
         IsLiked = post.IsLiked;
+        RefreshBookmark(host.Bookmarks.Any(b => b.PostId == post.Id));
         LikeGlyph = IsLiked ? "♥" : "♡";
         LikeCountLabel = post.LikeCount > 0 ? Short(post.LikeCount) : "";
         TagsText = string.Join("  ", post.Tags.Take(8).Select(t => "#" + t));
@@ -181,10 +190,12 @@ public sealed partial class MainViewModel : ObservableObject
     public ObservableCollection<NotificationItemViewModel> Notifications { get; } = new();
     public ObservableCollection<string> SearchTags { get; } = new();
     public ObservableCollection<PinnedTab> PinnedTabs { get; } = new();
+    public ObservableCollection<Bookmark> Bookmarks { get; } = new();
+    public FeedFilter Filters { get; private set; } = new();
     public ObservableCollection<ConversationItemViewModel> Conversations { get; } = new();
     public ObservableCollection<MessageItemViewModel> ThreadMessages { get; } = new();
     public TumblrClient Client => _client;
-    public bool ShowFeed => !IsNotificationsPage && !IsMessagesPage;
+    public bool ShowFeed => !IsNotificationsPage && !IsMessagesPage && !IsBookmarksPage;
     public string PrimaryBlog => _selfBlog.Length > 0 ? _selfBlog : _blog;
 
     public List<FeedOption> Feeds { get; } = new()
@@ -196,6 +207,7 @@ public sealed partial class MainViewModel : ObservableObject
         new("notifications", "Activity"),
         new("messages", "Messages"),
         new("library", "Library"),
+        new("bookmarks", "Bookmarks"),
     };
 
     [ObservableProperty] private FeedOption? _selectedFeed;
@@ -211,6 +223,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     partial void OnIsNotificationsPageChanged(bool value) => OnPropertyChanged(nameof(ShowFeed));
     partial void OnIsMessagesPageChanged(bool value) => OnPropertyChanged(nameof(ShowFeed));
+    partial void OnIsBookmarksPageChanged(bool value) => OnPropertyChanged(nameof(ShowFeed));
     [ObservableProperty] private bool _inThread;
     [ObservableProperty] private bool _showingRequests;
     [ObservableProperty] private bool _isLibraryPage;
@@ -233,6 +246,12 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _isPinnedLatest = true;
     [ObservableProperty] private bool _isPinnedTop;
     [ObservableProperty] private bool _hasPinnedTabs;
+    [ObservableProperty] private bool _hasBookmarks;
+    [ObservableProperty] private bool _isBookmarksPage;
+    [ObservableProperty] private int _hiddenCount;
+    [ObservableProperty] private bool _showFiltered;
+    [ObservableProperty] private bool _hasHiddenPosts;
+    [ObservableProperty] private string _filterNote = "";
     [ObservableProperty] private bool _canAskAnon;
     [ObservableProperty] private bool _isFollowBusy;
     [ObservableProperty] private bool _isLatest = true;
@@ -247,6 +266,8 @@ public sealed partial class MainViewModel : ObservableObject
     {
         _demoMode = Environment.GetEnvironmentVariable("DESKBOARD_DEMO") == "1";
         LoadPinnedTabs();
+        Filters = FeedFilter.Load();
+        LoadBookmarks();
         SelectedFeed = Feeds[0];
         if (_demoMode)
         {
@@ -331,12 +352,24 @@ public sealed partial class MainViewModel : ObservableObject
         IsBlogPage = false;
         IsMessagesPage = false;
         IsLibraryPage = false;
+        IsBookmarksPage = false;
         InThread = false;
         if (value.Key == "notifications")
         {
             IsNotificationsPage = true;
             SearchBlogs.Clear(); HasSearchMeta = false;
             _ = LoadNotificationsAsync();
+            return;
+        }
+        if (value.Key == "bookmarks")
+        {
+            IsNotificationsPage = false;
+            IsMessagesPage = false;
+            IsLibraryPage = false;
+            IsBookmarksPage = true;
+            Headline = "Bookmarks";
+            LoadBookmarks();
+            Subhead = $"{Bookmarks.Count} saved";
             return;
         }
         if (value.Key == "library")
@@ -397,6 +430,75 @@ public sealed partial class MainViewModel : ObservableObject
             HasStatus = true;
             Status = ex is TumblrException ? ex.Message : $"Couldn't follow: {ex.Message}";
         }
+    }
+
+    private bool ShouldSkip(Post post)
+    {
+        if (ShowFiltered || !Filters.IsMuted(post)) return false;
+        HiddenCount++;
+        HasHiddenPosts = true;
+        return true;
+    }
+
+    private void ResetFilterCounters()
+    {
+        HiddenCount = 0;
+        HasHiddenPosts = false;
+        FilterNote = "";
+    }
+
+    private void FinishFilterCounters()
+    {
+        if (HiddenCount > 0)
+            FilterNote = $"{HiddenCount} post{(HiddenCount == 1 ? "" : "s")} hidden by your keyword filters";
+    }
+
+    [RelayCommand]
+    public async Task ShowFilteredAsync()
+    {
+        ShowFiltered = true;
+        HasHiddenPosts = false;
+        await LoadFeedAsync();
+    }
+
+    public void LoadBookmarks()
+    {
+        Bookmarks.Clear();
+        foreach (var bookmark in BookmarkStore.Load().OrderByDescending(b => b.SavedAt))
+            Bookmarks.Add(bookmark);
+        HasBookmarks = Bookmarks.Count > 0;
+    }
+
+    public void ToggleBookmark(PostItemViewModel item)
+    {
+        var existing = Bookmarks.FirstOrDefault(b => b.PostId == item.Post.Id);
+        if (existing is not null)
+        {
+            Bookmarks.Remove(existing);
+        }
+        else
+        {
+            Bookmarks.Insert(0, BookmarkStore.FromPost(item.Post));
+        }
+        BookmarkStore.Save(Bookmarks);
+        HasBookmarks = Bookmarks.Count > 0;
+        item.RefreshBookmark(Bookmarks.Any(b => b.PostId == item.Post.Id));
+        Status = existing is null ? "Saved to bookmarks." : "Removed from bookmarks.";
+        HasStatus = true;
+        Subhead = Headline + (IsBookmarksPage ? $" · {Bookmarks.Count} saved" : "");
+    }
+
+    public void OpenBookmark(Bookmark bookmark)
+    {
+        if (bookmark.PostUrl.Length == 0) return;
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(bookmark.PostUrl)
+            {
+                UseShellExecute = true,
+            });
+        }
+        catch (Exception) { }
     }
 
     public void LoadPinnedTabs()
@@ -662,7 +764,13 @@ public sealed partial class MainViewModel : ObservableObject
         {
             var page = await fetch();
             Posts.Clear();
-            foreach (var post in page.Items) Posts.Add(new PostItemViewModel(post, this));
+            ResetFilterCounters();
+            foreach (var post in page.Items)
+            {
+                if (ShouldSkip(post)) continue;
+                Posts.Add(new PostItemViewModel(post, this));
+            }
+            FinishFilterCounters();
             _next = page.NextUrl;
             HasMore = _next is not null;
             Subhead = $"{Headline} · {Posts.Count} posts{(page.Total is { } t ? $" of {t}" : "")}";
@@ -689,6 +797,7 @@ public sealed partial class MainViewModel : ObservableObject
             var page = await _client.GetPageAsync(url);
             foreach (var post in page.Items)
             {
+                if (ShouldSkip(post)) continue;
                 var item = new PostItemViewModel(post, this);
                 Posts.Add(item);
                 _ = item.LoadImagesAsync();

@@ -37,6 +37,10 @@ Full decision record: [`docs/REWRITE.md`](docs/REWRITE.md).
 - **Pinned tabs**: pin any tag, search, or *all followed tags* as its own tab,
   each remembering its own **Latest / Top** sort. Add with **＋**, unpin with one click.
 - A ready-made **"Your tags"** tab aggregates every tag you follow into one feed.
+- **Keyword filters**: mute words/phrases across feeds and pinned tabs, with a
+  "N posts hidden — Show hidden" banner. Managed in Settings.
+- **Local bookmarks**: save any post with ☆; stored on disk, works offline,
+  independent of likes. Browse them under **Bookmarks**.
 
 ## What works right now
 
