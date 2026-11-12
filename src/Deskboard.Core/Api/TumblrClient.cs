@@ -476,6 +476,37 @@ public sealed partial class TumblrClient : IDisposable
         => GetPageAsyncParam("/v2/user/inbox",
             new Dictionary<string, string?> { ["limit"] = limit.ToString(), ["offset"] = "0" }, ct);
 
+    // ------------------------------------------------------------ GIF library --
+    public async Task<List<GifItem>> GetPopularGifsAsync(int offset = 0, CancellationToken ct = default)
+    {
+        using var doc = await SendAsync(HttpMethod.Get, "/v2/gif/popular",
+            new Dictionary<string, string?> { ["offset"] = offset.ToString() }, ct: ct).ConfigureAwait(false);
+        var gifs = new List<GifItem>();
+        var root = doc.RootElement.TryGetProperty("response", out var r) ? r : doc.RootElement;
+        if (!root.TryGetProperty("gifs", out var list) || list.ValueKind != JsonValueKind.Array) return gifs;
+        foreach (var item in list.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object) continue;
+            if (!item.TryGetProperty("media", out var media) || media.ValueKind != JsonValueKind.Array ||
+                media.GetArrayLength() == 0) continue;
+            var m = media[0];
+            var url = m.Str("url");
+            if (url.Length == 0) continue;
+            var poster = "";
+            if (m.TryGetProperty("poster", out var posterEl) && posterEl.ValueKind == JsonValueKind.Object)
+                poster = posterEl.Str("url");
+            gifs.Add(new GifItem
+            {
+                Url = url,
+                Poster = poster,
+                Width = (int)m.Num("width"),
+                Height = (int)m.Num("height"),
+                MimeType = m.Str("type") is { Length: > 0 } t ? t : "image/gif",
+            });
+        }
+        return gifs;
+    }
+
     // ---------------------------------------------------------------- trends --
     /// <summary>Trending topics, as tag names in the order Tumblr surfaces them.</summary>
     public async Task<List<string>> GetTrendingTagsAsync(CancellationToken ct = default)

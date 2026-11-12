@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.1 — Beta
+
+- First-run welcome screen (sign in / browser session / browse).
+- Credit sign-in hardening: explicit signed-out override, startup order fixed.
+- Trending tags in the right rail; queue pause/resume/shuffle.
+- GIF library picker in the composer.
+- Activity: correct names/avatars and cursor pagination.
+- Keyword filters and local bookmarks (from 0.2.0 work).
+
 ## 0.2.0 — Beta
 
 First public Beta of the cross-platform rewrite.

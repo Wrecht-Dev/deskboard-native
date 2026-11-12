@@ -1,0 +1,20 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Deskboard.App.Views.GifPickerWindow"
+        Title="Pick a GIF" Width="640" Height="560"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource PageBrush}">
+  <DockPanel Margin="18">
+    <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+      <TextBlock Text="Popular GIFs" Classes="heading" VerticalAlignment="Center" />
+      <Button Grid.Column="1" Content="Cancel" Click="OnCancel" />
+    </Grid>
+    <ScrollViewer>
+      <ItemsControl Name="GifList">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+      </ItemsControl>
+    </ScrollViewer>
+  </DockPanel>
+</Window>

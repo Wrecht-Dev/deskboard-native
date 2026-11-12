@@ -21,7 +21,7 @@ Legend: ✅ working & verified live · 🟡 partial · ⏳ planned · ⛔ exclud
 | Blog pages | ✅ | posts, follower count, Follow/Following, Ask |
 | Tag pages (Latest / Top) | ✅ | `/v2/hubs/{tag}/timeline[?sort=top]` with toggle |
 | Post permalink + notes | ✅ | notes with totals (likes/reblogs/replies), pagination, reply composer |
-| Search (posts / blogs / communities) | 🟡 | API verified live (5 posts, 5 blogs, 5 communities); UI wired (search box + results); keyboard input not injectable under headless Xvfb, so UI unverified |
+| Search (posts / blogs / communities) | 🟡 | API verified live; UI wired; typing not injectable headlessly |
 | Notifications / Activity | ✅ | 48 → 98 via cursor pagination (scroll + Load more); fromTumblelog* names/avatars; follow-back |
 | Notifications | ⏳ | |
 | Messaging — conversations list | ✅ | 20 conversations live; unread badges, dates |
@@ -125,3 +125,13 @@ verified payloads but were never executed.
 
 **Known gaps:** inline video/audio decode (system-player fallback), conversation
 preview text, pixel-perfect typography (Favorit unavailable).
+
+## Late Beta additions
+
+| Feature | Status |
+|---|---|
+| Trending tags (live) | ✅ 10 topics, click opens tag |
+| Queue pause / resume / shuffle | ✅ wired, empty queue on account |
+| GIF library picker | ✅ live thumbnails, attaches as image block |
+| First-run welcome | ✅ screenshot-verified |
+| Update check + crash log | ✅ |

@@ -43,6 +43,7 @@ public sealed partial class ComposerViewModel : ObservableObject
     public bool IsEdit => Mode == ComposerMode.Edit;
 
     public string CharacterLabel => $"{Text.Length}";
+    public string MediaLabel => Images.Count == 0 ? "" : $"{Images.Count} media attached";
     public bool CanSubmit => !IsBusy && SelectedBlog.Length > 0 &&
                              (Text.Trim().Length > 0 || Images.Count > 0);
 
@@ -134,6 +135,22 @@ public sealed partial class ComposerViewModel : ObservableObject
 
     partial void OnShowScheduleChanged(bool value) => OnPropertyChanged(nameof(ShowSchedule));
 
+    public void AddGif(Deskboard.Core.Models.GifItem gif)
+    {
+        Images.Add(new UploadedMedia
+        {
+            Url = gif.Url,
+            MimeType = gif.MimeType,
+            Width = gif.Width,
+            Height = gif.Height,
+        });
+        OnPropertyChanged(nameof(CanSubmit));
+        OnPropertyChanged(nameof(MediaLabel));
+    }
+
+    public async Task<System.Collections.Generic.IReadOnlyList<Deskboard.Core.Models.GifItem>> LoadGifsAsync()
+        => await _client.GetPopularGifsAsync();
+
     public async Task AttachAsync(string path)
     {
         IsBusy = true;
@@ -145,6 +162,7 @@ public sealed partial class ComposerViewModel : ObservableObject
             if (media is null) { Status = "Tumblr didn't accept that image."; return; }
             Images.Add(media);
             OnPropertyChanged(nameof(CanSubmit));
+            OnPropertyChanged(nameof(MediaLabel));
             Status = $"{Path.GetFileName(path)} attached.";
         }
         catch (Exception ex)

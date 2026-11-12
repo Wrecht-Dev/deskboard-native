@@ -18,6 +18,7 @@
                  IsVisible="{Binding HasStatus}" Margin="0,0,0,8" />
       <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8">
         <Button Content="Add image" Click="OnAttach" />
+        <Button Content="Add GIF" Click="OnAddGif" />
         <TextBlock Text="{Binding CharacterLabel}" Classes="dim" FontSize="12" VerticalAlignment="Center" />
         <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsNew}">
           <Button Content="Schedule" Command="{Binding ToggleScheduleCommand}" />
@@ -45,13 +46,7 @@
       <TextBox Text="{Binding Text}" AcceptsReturn="True" TextWrapping="Wrap" Height="240"
                Watermark="What's on your mind?" />
       <TextBox Text="{Binding Tags}" Watermark="tags: comma, separated" />
-      <ItemsControl ItemsSource="{Binding Images}">
-        <ItemsControl.ItemTemplate>
-          <DataTemplate x:DataType="vm:ComposerViewModel">
-            <TextBlock Text="image attached" Classes="dim" FontSize="12" />
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
+      <TextBlock Text="{Binding MediaLabel}" Classes="dim" FontSize="12" />
     </StackPanel>
   </DockPanel>
 </Window>

@@ -70,6 +70,10 @@ Full decision record: [`docs/REWRITE.md`](docs/REWRITE.md).
 |---|---|
 | ![Home dark](docs/screenshots/home-dark.png) | ![Home light](docs/screenshots/home-light.png) |
 
+| First run | Composer | GIF library |
+|---|---|---|
+| ![Welcome](docs/screenshots/welcome.png) | ![Composer](docs/screenshots/composer-demo.png) | ![GIFs](docs/screenshots/gif-picker.png) |
+
 Both screenshots use **synthetic demo data** (`DESKBOARD_DEMO=1`) — no real
 account content appears anywhere in this repository.
 

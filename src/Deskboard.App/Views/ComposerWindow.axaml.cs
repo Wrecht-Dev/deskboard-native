@@ -18,6 +18,20 @@ public partial class ComposerWindow : Window
         };
     }
 
+    private async void OnAddGif(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not ComposerViewModel vm) return;
+        var picker = new GifPickerWindow();
+        try
+        {
+            var gifs = await vm.LoadGifsAsync();
+            picker.SetGifs(gifs);
+        }
+        catch (System.Exception) { }
+        await picker.ShowDialog(this);
+        if (picker.Selected is { } gif) vm.AddGif(gif);
+    }
+
     private async void OnAttach(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not ComposerViewModel vm) return;
