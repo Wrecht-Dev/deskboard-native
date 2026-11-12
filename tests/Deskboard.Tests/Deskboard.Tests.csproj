@@ -22,4 +22,7 @@
     <ProjectReference Include="..\..\src\Deskboard.App\Deskboard.App.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="fixtures/**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

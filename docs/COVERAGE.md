@@ -38,7 +38,7 @@ Legend: ✅ working & verified live · 🟡 partial · ⏳ planned · ⛔ exclud
 | Reblog provenance | ✅ | "reblogged from @x" |
 | Text blocks (headings/quotes/lists) | ✅ | NPF formatting → styled runs (bold/italic/strike/underline/links), headings, quotes, bullets |
 | Photoset grids (1–4 images) | ✅ | single image or 2-col grid, lazy + cached |
-| Animated GIFs | 🟡 | first frame + GIF badge; animation playback pending |
+| Animated GIFs | ✅ | Skia frame decode + timer playback; verified animating (frame captures differ) |
 | Video posters / inline playback | 🟡 | poster image + play badge; inline playback pending |
 | Audio | ⏳ | |
 | Polls | ⏳ | |
@@ -75,7 +75,7 @@ validation.
 | Check | Result |
 |---|---|
 | Build (`dotnet build`) | ✅ 0 errors |
-| Tests (`dotnet test`) | ✅ 28/28 |
+| Tests (`dotnet test`) | ✅ 32/32 |
 | Live feed | ✅ 11–12 posts, avatars + text render |
 | Live tag Top ordering | ✅ note-count sorted |
 | Live likes | ✅ count returned |

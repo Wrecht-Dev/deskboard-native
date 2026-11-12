@@ -61,6 +61,14 @@ public static class ImageLoader
         }
     }
 
+    /// <summary>Raw bytes (used by the animated GIF decoder).</summary>
+    public static async Task<byte[]?> GetBytesAsync(string url)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return null;
+        try { return await Http.GetByteArrayAsync(url).ConfigureAwait(false); }
+        catch (Exception) { return null; }
+    }
+
     /// <summary>Apply a bitmap to a property on the UI thread.</summary>
     public static Task ApplyAsync(Action<Bitmap> setter, Bitmap bitmap)
         => Dispatcher.UIThread.InvokeAsync(() => setter(bitmap)).GetTask();

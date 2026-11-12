@@ -1,10 +1,18 @@
 using Deskboard.Core.Api;
 var client = new TumblrClient();
-Console.WriteLine($"hasSession={client.HasSession}");
 await client.EnsureTokenAsync();
-try
+var home = await client.GetHomeAsync(14);
+foreach (var p in home.Items)
 {
-    var (name, blogs) = await client.GetIdentityAsync();
-    Console.WriteLine($"identity='{name}' blogs=[{string.Join(",", blogs)}]");
+    var gifs = p.Content.SelectMany(b => b.Media).Count(m => m.IsGif);
+    var imgs = p.Content.SelectMany(b => b.Media).Count(m => m.Kind == "image");
+    if (gifs > 0 || imgs > 0) Console.WriteLine($"{p.BlogName,-24} gifs={gifs} imgs={imgs}");
 }
-catch (Exception ex) { Console.WriteLine("identity ERROR: " + ex.Message); }
+var art = await client.GetBlogPostsAsync("artspotting", 20);
+var gifPosts = art.Items.Where(p => p.Content.SelectMany(b => b.Media).Any(m => m.IsGif)).ToList();
+Console.WriteLine($"artspotting: {art.Items.Count} posts, {gifPosts.Count} with gif");
+if (gifPosts.Count > 0)
+{
+    var m = gifPosts[0].Content.SelectMany(b => b.Media).First(x => x.IsGif);
+    Console.WriteLine("gif url: " + m.Url);
+}
