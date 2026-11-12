@@ -1,0 +1,47 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Deskboard.App.ViewModels"
+        x:Class="Deskboard.App.Views.ReblogWindow"
+        x:DataType="vm:ReblogViewModel"
+        Title="Reblog" Width="520" Height="520"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource PageBrush}">
+  <DockPanel Margin="22">
+    <TextBlock DockPanel.Dock="Top" Text="{Binding Title}" Classes="heading" Margin="0,0,0,16" />
+
+    <StackPanel DockPanel.Dock="Bottom" Spacing="10">
+      <TextBlock Text="{Binding Error}" Foreground="#FF7B7B" FontSize="13" IsVisible="{Binding HasError}" />
+      <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+        <TextBlock Grid.Column="0" Text="{Binding SelectedBlog, StringFormat='posting to {0}'}"
+                   Classes="dim" FontSize="12" VerticalAlignment="Center" />
+        <Button Grid.Column="1" Content="Cancel" Command="{Binding CancelCommand}" />
+        <Button Grid.Column="2" Classes="accent" Content="Reblog" Command="{Binding ReblogCommand}"
+                IsEnabled="{Binding !IsBusy}" />
+      </Grid>
+    </StackPanel>
+
+    <StackPanel Spacing="12">
+      <ComboBox ItemsSource="{Binding Blogs}" SelectedItem="{Binding SelectedBlog}"
+                HorizontalAlignment="Stretch" />
+
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button Content="Reblog with text" Classes="chip" FontSize="13"
+                Command="{Binding SetModeCommand}" CommandParameter="withtext" />
+        <Button Content="Reblog now" Classes="chip" FontSize="13"
+                Command="{Binding SetModeCommand}" CommandParameter="now" />
+        <Button Content="Schedule" Classes="chip" FontSize="13"
+                Command="{Binding SetModeCommand}" CommandParameter="schedule" />
+      </StackPanel>
+
+      <TextBox Text="{Binding Comment}" AcceptsReturn="True" TextWrapping="Wrap"
+               Watermark="Say something about this post…" Height="110" IsVisible="{Binding IsWithText}" />
+      <TextBox Text="{Binding Tags}" Watermark="tags: comma, separated" IsVisible="{Binding IsWithText}" />
+
+      <StackPanel IsVisible="{Binding IsSchedule}" Spacing="8">
+        <TextBlock Text="Publish at" Classes="dim" FontSize="12" />
+        <DatePicker SelectedDate="{Binding PublishAt}" HorizontalAlignment="Stretch" />
+        <TimePicker SelectedTime="{Binding PublishAt}" HorizontalAlignment="Stretch" />
+      </StackPanel>
+    </StackPanel>
+  </DockPanel>
+</Window>

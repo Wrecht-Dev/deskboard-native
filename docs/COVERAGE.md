@@ -30,13 +30,13 @@ Legend: ✅ working & verified live · 🟡 partial · ⏳ planned · ⛔ exclud
 |---|---|---|
 | Header (avatar, blog, time) | ✅ | circular avatar, loaded with UA+Referer |
 | Reblog provenance | ✅ | "reblogged from @x" |
-| Text blocks (headings/quotes/lists) | 🟡 | plain text runs now; rich formatting next |
+| Text blocks (headings/quotes/lists) | ✅ | NPF formatting → styled runs (bold/italic/strike/underline/links), headings, quotes, bullets |
 | Photoset grids (1–4 images) | ✅ | single image or 2-col grid, lazy + cached |
 | Animated GIFs | ⏳ | badge + playback |
 | Video posters / inline playback | ⏳ | |
 | Audio | ⏳ | |
 | Polls | ⏳ | |
-| Post actions (like/reblog/reply) | 🟡 | like wired (CSRF, optimistic, revert); reblog/reply next |
+| Post actions (like/reblog/reply) | 🟡 | like ✅ CSRF/optimistic; reblog dialog ✅ 3 modes (unit-tested, visual pass pending); reply next |
 | Post menu (mute/block/report/delete) | ⏳ | |
 
 ## 3. Write surface
@@ -45,7 +45,7 @@ Legend: ✅ working & verified live · 🟡 partial · ⏳ planned · ⛔ exclud
 |---|---|---|
 | CSRF token + retry on 401/1022 | ✅ | `SendWriteAsync` |
 | Like / unlike | ✅ | optimistic UI; fires only on click |
-| Reblog (text / post-only / scheduled) | ⏳ | client method ready |
+| Reblog (text / post-only / scheduled) | 🟡 | dialog + 3 modes wired; unit-tested; not fired live |
 | Follow / unfollow | ⏳ | client method ready |
 | Reply | ⏳ | client method ready |
 | Ask | ⏳ | client method ready |
@@ -54,11 +54,18 @@ Legend: ✅ working & verified live · 🟡 partial · ⏳ planned · ⛔ exclud
 | Composer (NPF text/photo/queue/draft/schedule) | ⏳ | |
 | Settings writes / notes moderation | ⏳ | |
 
-## 4. Verification
+## 4. Tests
+
+`dotnet test` — 11 tests: NPF formatting splits, heading/quote/list mapping,
+reblog-trail fallback, link ranges, reblog mode transitions and pre-network
+validation.
+
+## 5. Verification
 
 | Check | Result |
 |---|---|
 | Build (`dotnet build`) | ✅ 0 errors |
+| Tests (`dotnet test`) | ✅ 11/11 |
 | Live feed | ✅ 11–12 posts, avatars + text render |
 | Live tag Top ordering | ✅ note-count sorted |
 | Live likes | ✅ count returned |

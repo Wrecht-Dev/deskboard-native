@@ -56,6 +56,7 @@ public sealed partial class PostItemViewModel : ObservableObject
     public string RebloggedFrom { get; }
     public string BodyText { get; }
     public bool HasBody { get; }
+    public IReadOnlyList<ParagraphViewModel> Paragraphs { get; }
     public ObservableCollection<MediaItemViewModel> Media { get; } = new();
     public bool HasMedia => Media.Count > 0;
     public bool SingleMedia => Media.Count == 1;
@@ -87,7 +88,8 @@ public sealed partial class PostItemViewModel : ObservableObject
             ? $"reblogged from @{post.RebloggedFromName}"
             : "reblogged";
         BodyText = ExtractText(post);
-        HasBody = BodyText.Length > 0;
+        Paragraphs = RichTextBuilder.Build(post);
+        HasBody = Paragraphs.Count > 0;
         foreach (var media in post.Content.SelectMany(b => b.Media).Where(m => m.Kind == "image").Take(4))
             Media.Add(new MediaItemViewModel(media));
     }
@@ -161,6 +163,8 @@ public sealed partial class MainViewModel : ObservableObject
     private string _blog = "";
 
     public ObservableCollection<PostItemViewModel> Posts { get; } = new();
+    public ObservableCollection<string> Blogs { get; } = new();
+    public TumblrClient Client => _client;
 
     public List<FeedOption> Feeds { get; } = new()
     {
@@ -202,6 +206,7 @@ public sealed partial class MainViewModel : ObservableObject
             var (name, blogs) = await _client.GetIdentityAsync();
             _blog = blogs.FirstOrDefault() ?? name;
             Identity = name;
+            foreach (var blog in blogs) Blogs.Add(blog);
         }
         catch (Exception) { _blog = ""; }
         await LoadFeedAsync();

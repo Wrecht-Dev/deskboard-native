@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:Deskboard.App.ViewModels"
+        xmlns:controls="using:Deskboard.App.Controls"
         x:Class="Deskboard.App.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Title="Deskboard — Tumblr"
@@ -78,7 +79,7 @@
 
                 <TextBlock Text="{Binding RebloggedFrom}" Classes="dim" FontSize="12"
                            IsVisible="{Binding HasReblogLabel}" />
-                <TextBlock Text="{Binding BodyText}" IsVisible="{Binding HasBody}" LineHeight="22" FontSize="15" />
+                <controls:PostBody Paragraphs="{Binding Paragraphs}" IsVisible="{Binding HasBody}" />
 
                 <Border IsVisible="{Binding SingleMedia}" CornerRadius="8" ClipToBounds="True" Background="#0F0F0F">
                   <Image Source="{Binding Media[0].Bitmap}" Stretch="Uniform"
@@ -109,7 +110,10 @@
                   </Button>
                   <TextBlock Grid.Column="1" Text="{Binding LikeCountLabel}" Classes="dim" FontSize="13"
                              Margin="5,3,16,0" />
-                  <TextBlock Grid.Column="2" Text="⇄" FontSize="15" Foreground="#9AA7B4" VerticalAlignment="Center" />
+                  <Button Grid.Column="2" Background="Transparent" Padding="2,0" Click="OnReblog"
+                          VerticalAlignment="Center">
+                    <TextBlock Text="⇄" FontSize="15" Foreground="#9AA7B4" />
+                  </Button>
                   <TextBlock Grid.Column="3" Text="{Binding ReblogLabel}" Classes="dim" FontSize="13" Margin="5,3,0,0" />
                   <TextBlock Grid.Column="5" Text="{Binding NotesLabel}" Classes="dim" FontSize="13"
                              VerticalAlignment="Center" />
