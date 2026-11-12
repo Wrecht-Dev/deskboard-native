@@ -208,6 +208,94 @@ public sealed partial class TumblrClient : IDisposable
         }
     }
 
+    // ---------------------------------------------------------------- search --
+    public Task<Paged<Post>> SearchPostsAsync(string query, int limit = 20, CancellationToken ct = default)
+        => GetPageAsyncParam("/v2/timeline/search",
+            new Dictionary<string, string?> { ["query"] = query, ["limit"] = limit.ToString() }, ct);
+
+    public async Task<SearchBlogs> SearchBlogsAsync(string query, CancellationToken ct = default)
+    {
+        using var doc = await SendAsync(HttpMethod.Get, "/v2/search/blogs",
+            new Dictionary<string, string?> { ["query"] = query }, ct: ct).ConfigureAwait(false);
+        var result = new SearchBlogs();
+        var root = doc.RootElement.TryGetProperty("response", out var r) ? r : doc.RootElement;
+
+        if (root.TryGetProperty("blogs", out var blogs) && blogs.ValueKind == JsonValueKind.Array)
+            foreach (var b in blogs.EnumerateArray())
+                result.Blogs.Add(BlogParser.Parse(b));
+
+        if (root.TryGetProperty("tags", out var tags) && tags.ValueKind == JsonValueKind.Array)
+            foreach (var t in tags.EnumerateArray())
+            {
+                var name = t.ValueKind == JsonValueKind.String ? t.GetString()
+                    : t.TryGetProperty("name", out var n) ? n.GetString() : null;
+                if (!string.IsNullOrWhiteSpace(name)) result.Tags.Add(name!);
+            }
+
+        if (root.TryGetProperty("communities", out var comms) && comms.ValueKind == JsonValueKind.Array)
+            foreach (var c in comms.EnumerateArray())
+                result.Communities.Add(new SearchCommunity
+                {
+                    Name = c.Str("name"),
+                    Title = c.Str("title"),
+                    Description = c.Str("description"),
+                    Avatar = c.Str("avatar"),
+                    Members = c.Num("members"),
+                });
+
+        return result;
+    }
+
+    // ----------------------------------------------------------- notifications --
+    public async Task<NotificationsPage> GetNotificationsAsync(string blog, string? url = null,
+        CancellationToken ct = default)
+    {
+        var path = url ?? $"/v2/blog/{Uri.EscapeDataString(blog)}/notifications?limit=20";
+        using var doc = await SendAsync(HttpMethod.Get, path, ct: ct).ConfigureAwait(false);
+        return ParseNotifications(doc.RootElement);
+    }
+
+    private static NotificationsPage ParseNotifications(JsonElement root)
+    {
+        var response = root.TryGetProperty("response", out var r) ? r : root;
+        var notifications = new List<Notification>();
+        if (response.ValueKind == JsonValueKind.Object &&
+            response.TryGetProperty("notifications", out var arr) && arr.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var n in arr.EnumerateArray())
+            {
+                if (n.ValueKind != JsonValueKind.Object) continue;
+                notifications.Add(new Notification
+                {
+                    Type = n.Str("type"),
+                    Timestamp = n.Num("timestamp"),
+                    BlogName = n.Str("blogName"),
+                    BlogTitle = n.Str("blogTitle"),
+                    BlogUrl = n.Str("blogUrl"),
+                    AvatarUrl = n.Str("avatarUrl"),
+                    PostId = n.Str("postId"),
+                    ReplyText = n.Str("replyText"),
+                    AskQuestion = n.Str("askQuestion"),
+                    Followed = n.Bool("followed"),
+                    FollowingYou = n.Bool("followingYou") || n.Bool("isFollowingYou"),
+                });
+            }
+        }
+
+        string? next = null;
+        if (response.ValueKind == JsonValueKind.Object && response.TryGetProperty("links", out var links) &&
+            links.ValueKind == JsonValueKind.Object && links.TryGetProperty("next", out var n2) &&
+            n2.ValueKind == JsonValueKind.Object && n2.TryGetProperty("href", out var href))
+            next = href.GetString();
+
+        return new NotificationsPage
+        {
+            Notifications = notifications,
+            NextUrl = next,
+            Total = response.ValueKind == JsonValueKind.Object ? (int)response.Num("total") : 0,
+        };
+    }
+
     // --------------------------------------------------------------- identity --
     public async Task<(string Name, List<string> Blogs)> GetIdentityAsync(CancellationToken ct = default)
     {

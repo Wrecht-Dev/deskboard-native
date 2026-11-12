@@ -46,6 +46,12 @@ public partial class MainWindow : Window
         window.Show(this);
     }
 
+    private void OnSearchKey(object? sender, Avalonia.Input.KeyEventArgs e)
+    {
+        if (e.Key != Avalonia.Input.Key.Enter) return;
+        if (DataContext is MainViewModel vm) _ = vm.SearchAsync(SearchBox.Text ?? "");
+    }
+
     private void OnFollow(object? sender, RoutedEventArgs e)
     {
         if (DataContext is MainViewModel vm) _ = vm.ToggleFollowAsync();

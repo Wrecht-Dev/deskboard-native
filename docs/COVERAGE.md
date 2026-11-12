@@ -19,7 +19,8 @@ Legend: ✅ working & verified live · 🟡 partial · ⏳ planned · ⛔ exclud
 | Blog pages | ✅ | posts, follower count, Follow/Following, Ask |
 | Tag pages (Latest / Top) | ✅ | `/v2/hubs/{tag}/timeline[?sort=top]` with toggle |
 | Post permalink + notes | ✅ | notes with totals (likes/reblogs/replies), pagination, reply composer |
-| Search (posts/blogs/tags/communities) | ⏳ | |
+| Search (posts / blogs / communities) | 🟡 | API verified live (5 posts, 5 blogs, 5 communities); UI wired (search box + results); keyboard input not injectable under headless Xvfb, so UI unverified |
+| Notifications / Activity | 🟡 | API verified live (48, paginated); list UI with follow-back; no screenshot for privacy |
 | Notifications | ⏳ | |
 | Messaging / conversations / inbox | ⏳ | |
 | Drafts / queue | ⏳ | |
@@ -65,7 +66,7 @@ validation.
 | Check | Result |
 |---|---|
 | Build (`dotnet build`) | ✅ 0 errors |
-| Tests (`dotnet test`) | ✅ 11/11 |
+| Tests (`dotnet test`) | ✅ 14/14 |
 | Live feed | ✅ 11–12 posts, avatars + text render |
 | Live tag Top ordering | ✅ note-count sorted |
 | Live likes | ✅ count returned |

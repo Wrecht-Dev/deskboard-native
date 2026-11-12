@@ -170,6 +170,9 @@ public sealed partial class MainViewModel : ObservableObject
 
     public ObservableCollection<PostItemViewModel> Posts { get; } = new();
     public ObservableCollection<string> Blogs { get; } = new();
+    public ObservableCollection<BlogRowViewModel> SearchBlogs { get; } = new();
+    public ObservableCollection<NotificationItemViewModel> Notifications { get; } = new();
+    public ObservableCollection<string> SearchTags { get; } = new();
     public TumblrClient Client => _client;
     public string PrimaryBlog => _blog;
 
@@ -179,6 +182,7 @@ public sealed partial class MainViewModel : ObservableObject
         new("following", "Following"),
         new("explore", "Explore"),
         new("likes", "Likes"),
+        new("notifications", "Activity"),
     };
 
     [ObservableProperty] private FeedOption? _selectedFeed;
@@ -189,6 +193,9 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _subhead = "";
     [ObservableProperty] private bool _canGoBack;
     [ObservableProperty] private bool _isTagPage;
+    [ObservableProperty] private bool _isNotificationsPage;
+    [ObservableProperty] private bool _hasSearchMeta;
+    [ObservableProperty] private string _searchQuery = "";
     [ObservableProperty] private bool _isBlogPage;
     [ObservableProperty] private bool _isFollowing;
     [ObservableProperty] private string _blogFollowersLabel = "";
@@ -231,7 +238,80 @@ public sealed partial class MainViewModel : ObservableObject
         _blog = "";
         Headline = value.Label;
         CanGoBack = false;
+        IsBlogPage = false;
+        if (value.Key == "notifications")
+        {
+            IsNotificationsPage = true;
+            SearchBlogs.Clear(); HasSearchMeta = false;
+            _ = LoadNotificationsAsync();
+            return;
+        }
+        IsNotificationsPage = false;
         _ = LoadFeedAsync();
+    }
+
+    public async Task SearchAsync(string query)
+    {
+        if (string.IsNullOrWhiteSpace(query)) return;
+        IsTagPage = false;
+        IsBlogPage = false;
+        IsNotificationsPage = false;
+        CanGoBack = true;
+        Headline = "Search";
+        SearchQuery = query.Trim();
+        Subhead = $"results for “{SearchQuery}”";
+        SearchBlogs.Clear();
+        SearchTags.Clear();
+        try
+        {
+            var blogs = await _client.SearchBlogsAsync(SearchQuery);
+            foreach (var blog in blogs.Blogs) SearchBlogs.Add(new BlogRowViewModel(blog, this));
+            foreach (var tag in blogs.Tags) SearchTags.Add(tag);
+            HasSearchMeta = SearchBlogs.Count > 0 || SearchTags.Count > 0;
+            foreach (var row in SearchBlogs) _ = row.LoadAsync();
+        }
+        catch (Exception) { HasSearchMeta = false; }
+        await LoadPostsAsync(() => _client.SearchPostsAsync(SearchQuery));
+    }
+
+    public async Task FollowBlogAsync(string blog)
+    {
+        try
+        {
+            await _client.FollowAsync(blog);
+            Status = $"Following {blog}."; HasStatus = true;
+        }
+        catch (Exception ex)
+        {
+            HasStatus = true;
+            Status = ex is TumblrException ? ex.Message : $"Couldn't follow: {ex.Message}";
+        }
+    }
+
+    private async Task LoadNotificationsAsync()
+    {
+        if (IsLoading) return;
+        IsLoading = true;
+        try
+        {
+            Notifications.Clear();
+            var page = await _client.GetNotificationsAsync(_blog);
+            foreach (var n in page.Notifications)
+            {
+                var vm = new NotificationItemViewModel(n, this);
+                Notifications.Add(vm);
+                _ = vm.LoadAsync();
+            }
+            Subhead = $"{Notifications.Count} recent";
+            HasStatus = Notifications.Count == 0;
+            Status = Notifications.Count == 0 ? "No activity yet." : "";
+        }
+        catch (Exception ex)
+        {
+            HasStatus = true;
+            Status = ex is TumblrException ? ex.Message : $"Couldn't load activity: {ex.Message}";
+        }
+        finally { IsLoading = false; }
     }
 
     [RelayCommand]
@@ -246,6 +326,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(blog)) return;
         IsTagPage = false;
         IsBlogPage = true;
+        IsNotificationsPage = false;
         CanGoBack = true;
         Headline = blog;
         Subhead = "loading…";
@@ -291,6 +372,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(tag)) return;
         IsTagPage = true;
         IsBlogPage = false;
+        IsNotificationsPage = false;
         CanGoBack = true;
         Headline = "#" + tag.TrimStart('#');
         Subhead = "loading…";
@@ -315,7 +397,7 @@ public sealed partial class MainViewModel : ObservableObject
         CanGoBack = false;
         IsTagPage = false;
         IsBlogPage = false;
-        Headline = SelectedFeed?.Label ?? "Home";
+        IsNotificationsPage = SelectedFeed?.Key == "notifications";
         await LoadFeedAsync();
     }
 

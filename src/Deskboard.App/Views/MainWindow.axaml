@@ -11,10 +11,12 @@
 
     <!-- left rail -->
     <Border Grid.Column="0" Background="{StaticResource RailBrush}">
-      <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="0,20,0,16">
+      <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="0,20,0,16">
         <TextBlock Grid.Row="0" Text="tumblr" FontSize="30" FontWeight="Black"
                    Foreground="White" Margin="28,0,0,18" />
-        <ListBox Grid.Row="1" Classes="nav" ItemsSource="{Binding Feeds}"
+        <TextBox Grid.Row="1" Name="SearchBox" Watermark="Search Tumblr" Margin="18,0,18,10"
+                 FontSize="13" KeyDown="OnSearchKey" />
+        <ListBox Grid.Row="2" Classes="nav" ItemsSource="{Binding Feeds}"
                  SelectedItem="{Binding SelectedFeed}">
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="vm:FeedOption">
@@ -22,7 +24,7 @@
             </DataTemplate>
           </ListBox.ItemTemplate>
         </ListBox>
-        <StackPanel Grid.Row="3" Spacing="10" Margin="20,0">
+        <StackPanel Grid.Row="4" Spacing="10" Margin="20,0">
           <TextBlock Text="{Binding Identity}" Classes="dim" FontSize="12" />
           <Button Classes="accent" Content="Create" HorizontalAlignment="Stretch" />
           <TextBlock Text="native rewrite · .NET + Avalonia" Classes="dim" FontSize="10" />
@@ -64,7 +66,37 @@
         <TextBlock Text="{Binding Status}" Classes="dim" FontSize="13" />
       </Border>
 
+      <Border DockPanel.Dock="Top" Margin="34,0,34,10" IsVisible="{Binding HasSearchMeta}">
+        <StackPanel Spacing="6">
+          <TextBlock Text="Blogs" Classes="dim" FontSize="11" />
+          <ItemsControl ItemsSource="{Binding SearchBlogs}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel Orientation="Horizontal" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:BlogRowViewModel">
+                <Button Command="{Binding OpenCommand}" Background="#1B1B1B" CornerRadius="8"
+                        Padding="8" Margin="0,0,8,8">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Border Width="28" Height="28" CornerRadius="14" ClipToBounds="True" Background="#25323D">
+                      <Image Source="{Binding Avatar}" Stretch="UniformToFill" />
+                    </Border>
+                    <StackPanel VerticalAlignment="Center">
+                      <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold" />
+                      <TextBlock Text="{Binding Handle}" Classes="dim" FontSize="11" />
+                    </StackPanel>
+                  </StackPanel>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+
       <ListBox Name="FeedList" Classes="feed" ItemsSource="{Binding Posts}"
+               IsVisible="{Binding !IsNotificationsPage}"
                ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                DoubleTapped="OnOpenPost">
         <ListBox.ItemTemplate>
@@ -141,6 +173,31 @@
           </DataTemplate>
         </ListBox.ItemTemplate>
       </ListBox>
+
+      <ScrollViewer IsVisible="{Binding IsNotificationsPage}" Padding="34,0,34,24">
+        <StackPanel Spacing="2" MaxWidth="640">
+          <ItemsControl ItemsSource="{Binding Notifications}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:NotificationItemViewModel">
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,0,0,4" Height="54">
+                  <Border Width="34" Height="34" CornerRadius="17" ClipToBounds="True" Background="#25323D"
+                          VerticalAlignment="Center">
+                    <Image Source="{Binding Avatar}" Stretch="UniformToFill" />
+                  </Border>
+                  <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="14" />
+                    <TextBlock Text="{Binding Action}" Classes="dim" FontSize="12" />
+                  </StackPanel>
+                  <TextBlock Grid.Column="2" Text="{Binding TimeAgo}" Classes="dim" FontSize="12"
+                             Margin="0,0,10,0" VerticalAlignment="Center" />
+                  <Button Grid.Column="3" Content="Follow back" FontSize="12" Padding="10,5"
+                          IsVisible="{Binding NeedsFollowBack}" Command="{Binding FollowBackCommand}" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </ScrollViewer>
     </DockPanel>
 
     <!-- right rail -->
