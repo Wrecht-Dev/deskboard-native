@@ -1,19 +1,19 @@
 using Deskboard.Core.Api;
+using Deskboard.Core.Models;
+var draft = new ComposerDraft { Text = "hello there", Tags = "art, design" };
+draft.Images.Add(new UploadedMedia { Url = "https://64.media.tumblr.com/x.png", Width = 800, Height = 600 });
+Console.WriteLine(TumblrClient.BuildContentJson(draft));
 var client = new TumblrClient();
 await client.EnsureTokenAsync();
 var (name, blogs) = await client.GetIdentityAsync();
-var page = await client.GetConversationsAsync();
-Console.WriteLine($"conversations: {page.Conversations.Count} | next={page.NextUrl is not null}");
-foreach (var c in page.Conversations.Take(2))
-    Console.WriteLine($"  {c.Title,-34} unread={c.Unread} preview=\"{c.Preview}\"");
-var first = page.Conversations.FirstOrDefault(c => c.Participants.Count > 1);
-if (first is not null)
+var blog = blogs.FirstOrDefault() ?? name;
+try
 {
-    var msgs = await client.GetMessagesAsync(first.Id);
-    Console.WriteLine($"thread id={first.Id} msgs={msgs.Count}");
-    foreach (var m in msgs.Take(4))
-    {
-        var who = first.ParticipantNames.TryGetValue(m.ParticipantKey, out var n) ? n : m.ParticipantKey;
-        Console.WriteLine($"  {(who.Equals(name, StringComparison.OrdinalIgnoreCase) ? "ME" : who),-18} {m.TimeLabel} {m.Text[..Math.Min(40, m.Text.Length)]}");
-    }
+    var drafts = await client.GetDraftsAsync(blog);
+    Console.WriteLine($"drafts: {drafts.Items.Count} | next={drafts.NextUrl is not null}");
+    var queue = await client.GetQueueAsync(blog);
+    Console.WriteLine($"queue: {queue.Items.Count} | next={queue.NextUrl is not null}");
+    var inbox = await client.GetInboxAsync();
+    Console.WriteLine($"inbox: {inbox.Items.Count} | next={inbox.NextUrl is not null}");
 }
+catch (Exception ex) { Console.WriteLine("ERROR: " + ex.Message); }

@@ -255,6 +255,116 @@ public sealed partial class TumblrClient : IDisposable
         return result;
     }
 
+    // --------------------------------------------------------------- composer --
+    /// <summary>
+    /// Builds the NPF content array the posts endpoint expects. Pure so it can be
+    /// unit tested without touching the network.
+    /// </summary>
+    public static string BuildContentJson(ComposerDraft draft)
+    {
+        var blocks = new List<Dictionary<string, object>>();
+        if (!string.IsNullOrWhiteSpace(draft.Text))
+            blocks.Add(new Dictionary<string, object>
+            {
+                ["type"] = "text",
+                ["text"] = draft.Text.TrimEnd(),
+            });
+
+        foreach (var image in draft.Images.Where(i => i.Url.Length > 0))
+            blocks.Add(new Dictionary<string, object>
+            {
+                ["type"] = "image",
+                ["media"] = new[]
+                {
+                    new Dictionary<string, object>
+                    {
+                        ["type"] = image.MimeType,
+                        ["url"] = image.Url,
+                        ["width"] = image.Width,
+                        ["height"] = image.Height,
+                    },
+                },
+            });
+
+        return JsonSerializer.Serialize(blocks);
+    }
+
+    /// <summary>Create a post on one of the user's blogs.</summary>
+    public Task CreatePostAsync(string blog, ComposerDraft draft, string state,
+        string? publishOn = null, CancellationToken ct = default)
+    {
+        var form = new Dictionary<string, string?>
+        {
+            ["content"] = BuildContentJson(draft),
+            ["layout"] = JsonSerializer.Serialize(new[] { "rows" }),
+            ["state"] = state,
+        };
+        var tags = draft.Tags.Trim();
+        if (tags.Length > 0) form["tags"] = tags;
+        if (publishOn is not null) form["publish_on"] = publishOn;
+        return SendWriteAsync(HttpMethod.Post, $"/v2/blog/{Uri.EscapeDataString(blog)}/posts",
+            form: form, ct: ct).AsVoid();
+    }
+
+    /// <summary>Upload an image for the composer; returns its CDN media descriptor.</summary>
+    public async Task<UploadedMedia?> UploadImageAsync(string filePath, CancellationToken ct = default)
+    {
+        var bytes = await File.ReadAllBytesAsync(filePath, ct).ConfigureAwait(false);
+        var ext = Path.GetExtension(filePath).ToLowerInvariant();
+        var mime = ext switch
+        {
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".gif" => "image/gif",
+            ".webp" => "image/webp",
+            _ => "image/png",
+        };
+        using var form = new MultipartFormDataContent();
+        var file = new ByteArrayContent(bytes)
+        {
+            Headers = { ContentType = new MediaTypeHeaderValue(mime) },
+        };
+        form.Add(file, "file", Path.GetFileName(filePath));
+
+        await EnsureTokenAsync(ct).ConfigureAwait(false);
+        var csrf = await CsrfTokenAsync(ct: ct).ConfigureAwait(false);
+        using var request = NewRequest(HttpMethod.Post, ApiBase + "/v2/media/image", form);
+        if (csrf is not null) request.Headers.TryAddWithoutValidation("X-CSRF", csrf);
+        using var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
+        var body = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode)
+            throw new TumblrException(Explain((int)response.StatusCode, body), (int)response.StatusCode);
+
+        using var doc = JsonDocument.Parse(body);
+        var root = doc.RootElement.TryGetProperty("response", out var r) ? r : doc.RootElement;
+        JsonElement mediaEl = default;
+        var found = false;
+        if (root.TryGetProperty("media", out var media) && media.ValueKind == JsonValueKind.Array && media.GetArrayLength() > 0)
+        { mediaEl = media[0]; found = true; }
+        else if (root.ValueKind == JsonValueKind.Array && root.GetArrayLength() > 0) { mediaEl = root[0]; found = true; }
+        if (!found) throw new TumblrException("Tumblr didn't return an uploaded image.");
+
+        return new UploadedMedia
+        {
+            Url = mediaEl.Str("url"),
+            MimeType = mediaEl.Str("type") is { Length: > 0 } t ? t : mime,
+            Width = (int)mediaEl.Num("width"),
+            Height = (int)mediaEl.Num("height"),
+        };
+    }
+
+    /// <summary>Blog drafts / queue / inbox submissions.</summary>
+    public Task<Paged<Post>> GetDraftsAsync(string blog, int limit = 20, CancellationToken ct = default)
+        => GetPageAsyncParam($"/v2/blog/{Uri.EscapeDataString(blog)}/posts/draft",
+            new Dictionary<string, string?> { ["limit"] = limit.ToString() }, ct);
+
+    public Task<Paged<Post>> GetQueueAsync(string blog, int limit = 20, CancellationToken ct = default)
+        => GetPageAsyncParam($"/v2/blog/{Uri.EscapeDataString(blog)}/posts/queue",
+            new Dictionary<string, string?> { ["limit"] = limit.ToString() }, ct);
+
+    public Task<Paged<Post>> GetInboxAsync(int limit = 20, CancellationToken ct = default)
+        => GetPageAsyncParam("/v2/user/inbox",
+            new Dictionary<string, string?> { ["limit"] = limit.ToString(), ["offset"] = "0" }, ct);
+
     // -------------------------------------------------------------- messaging --
     /// <summary>Direct-message conversations.</summary>
     public async Task<ConversationsPage> GetConversationsAsync(string? url = null, CancellationToken ct = default)

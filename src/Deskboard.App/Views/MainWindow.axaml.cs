@@ -52,6 +52,19 @@ public partial class MainWindow : Window
         if (DataContext is MainViewModel vm) _ = vm.SearchAsync(SearchBox.Text ?? "");
     }
 
+    private async void OnCreate(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainViewModel vm) return;
+        var composer = new ComposerViewModel(vm.Client, vm.Blogs);
+        var window = new ComposerWindow { DataContext = composer };
+        composer.Completed += (_, label) =>
+        {
+            vm.Status = label;
+            vm.HasStatus = true;
+        };
+        await window.ShowDialog(this);
+    }
+
     private void OnFollow(object? sender, RoutedEventArgs e)
     {
         if (DataContext is MainViewModel vm) _ = vm.ToggleFollowAsync();

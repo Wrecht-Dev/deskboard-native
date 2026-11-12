@@ -27,7 +27,7 @@ Legend: ✅ working & verified live · 🟡 partial · ⏳ planned · ⛔ exclud
 | Messaging — send | 🟡 | wired + optimistic; not fired live (would message a real person) |
 | Messaging — requests | ⏳ | |
 | Inbox / drafts / queue | ⏳ | |
-| Drafts / queue | ⏳ | |
+| Drafts / queue / inbox APIs | ✅ | endpoints live (0 items on this account); pages pending |
 
 ## 2. Post rendering
 
@@ -56,7 +56,9 @@ Legend: ✅ working & verified live · 🟡 partial · ⏳ planned · ⛔ exclud
 | Ask | ✅ | dialog with 500-char counter + anonymous toggle, gated on blog capability |
 | Submit post | ⏳ | |
 | DM send / accept / read / delete | ⏳ | |
-| Composer (NPF text/photo/queue/draft/schedule) | ⏳ | |
+| Composer — text + tags | ✅ | NPF content builder, blog selector, live char counter |
+| Composer — image upload | 🟡 | multipart upload + image blocks; not fired live (creates account media) |
+| Composer — publish / queue / draft / schedule | 🟡 | all four wired; not fired live (would post publicly) |
 | Settings writes / notes moderation | ⏳ | |
 
 ## 4. Tests
@@ -70,7 +72,7 @@ validation.
 | Check | Result |
 |---|---|
 | Build (`dotnet build`) | ✅ 0 errors |
-| Tests (`dotnet test`) | ✅ 24/24 |
+| Tests (`dotnet test`) | ✅ 28/28 |
 | Live feed | ✅ 11–12 posts, avatars + text render |
 | Live tag Top ordering | ✅ note-count sorted |
 | Live likes | ✅ count returned |
