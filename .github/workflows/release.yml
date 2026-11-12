@@ -1,0 +1,83 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: build ${{ matrix.rid }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { rid: linux-x64, os: ubuntu-latest }
+          - { rid: win-x64, os: windows-latest }
+          - { rid: osx-arm64, os: macos-latest }
+          - { rid: osx-x64, os: macos-13 }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          dotnet publish src/Deskboard.App/Deskboard.App.csproj -c Release -r win-x64 --self-contained true -o stage/publish
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Compress-Archive -Path stage/publish/* -DestinationPath dist/deskboard-native-win-x64.zip
+
+      - name: Package (Linux / macOS)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: bash scripts/package.sh ${{ matrix.rid }} dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.rid }}
+          path: |
+            dist/*.tar.gz
+            dist/*.zip
+          if-no-files-found: error
+
+  release:
+    name: publish release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
+          body: |
+            ## Deskboard Native ${{ github.ref_name }}
+
+            A native, cross-platform Tumblr client (.NET + Avalonia).
+
+            ### Install
+
+            **Linux / macOS**
+            ```bash
+            curl -fsSL https://raw.githubusercontent.com/Wrecht-Dev/deskboard-native/main/scripts/install.sh | bash
+            ```
+
+            **Windows (PowerShell)**
+            ```powershell
+            irm https://raw.githubusercontent.com/Wrecht-Dev/deskboard-native/main/scripts/install.ps1 | iex
+            ```
+
+            Or download the archive for your platform below. Builds are self-contained —
+            no .NET runtime needed. macOS builds are unsigned: right-click → Open the
+            first time.

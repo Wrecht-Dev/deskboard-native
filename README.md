@@ -75,6 +75,31 @@ More: [post permalink](docs/screenshots/detail-dark.png), [blog page](docs/scree
 - Visual parity is close but not pixel-identical: the web uses the proprietary
   *Favorit* typeface, this build falls back to Inter.
 
+
+## Install (one line)
+
+**Linux / macOS**
+```bash
+curl -fsSL https://raw.githubusercontent.com/Wrecht-Dev/deskboard-native/main/scripts/install.sh | bash
+```
+
+**Windows (PowerShell)**
+```powershell
+irm https://raw.githubusercontent.com/Wrecht-Dev/deskboard-native/main/scripts/install.ps1 | iex
+```
+
+Every release ships **self-contained** builds for Linux x64, Windows x64,
+macOS Apple Silicon and macOS Intel — no .NET runtime required. Releases are
+produced by CI on every `v*` tag; see [`.github/workflows/release.yml`](.github/workflows/release.yml).
+The installers are plain shell/PowerShell you can read before running.
+
+Prefer building it yourself?
+
+```bash
+dotnet build Deskboard.sln
+dotnet run --project src/Deskboard.App
+```
+
 ## Build & run
 
 Requires the **.NET 10 SDK**.

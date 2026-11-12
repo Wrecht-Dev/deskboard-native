@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Deskboard
+Comment=Native Tumblr client (cross-platform rewrite)
+Exec=deskboard-native
+Icon=deskboard-native
+Terminal=false
+Categories=Network;InstantMessaging;
+Keywords=tumblr;social;feed;
