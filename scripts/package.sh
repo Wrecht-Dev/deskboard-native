@@ -5,11 +5,12 @@ set -euo pipefail
 
 RID="${1:?usage: package.sh <rid> [output-dir]}"
 OUT="${2:-dist}"
+mkdir -p "$OUT"
+OUT="$(cd "$OUT" && pwd)"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 APP="$ROOT/src/Deskboard.App/Deskboard.App.csproj"
 STAGE="$OUT/stage-$RID"
 NAME="deskboard-native-$RID"
-mkdir -p "$OUT"
 
 rm -rf "$STAGE"; mkdir -p "$STAGE/$NAME"
 
