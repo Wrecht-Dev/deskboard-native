@@ -32,6 +32,12 @@ Chosen after comparing the realistic cross-platform desktop stacks:
 
 Full decision record: [`docs/REWRITE.md`](docs/REWRITE.md).
 
+## Custom features the web doesn't have
+
+- **Pinned tabs**: pin any tag, search, or *all followed tags* as its own tab,
+  each remembering its own **Latest / Top** sort. Add with **＋**, unpin with one click.
+- A ready-made **"Your tags"** tab aggregates every tag you follow into one feed.
+
 ## What works right now
 
 **Read**

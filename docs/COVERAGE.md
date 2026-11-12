@@ -67,6 +67,17 @@ Legend: ✅ working & verified live · 🟡 partial · ⏳ planned · ⛔ exclud
 | Theme toggle (in-session) | 🟡 | command wired; persistence verified on restart; headless click unverified |
 | Notes moderation (delete/flag) | 🟡 | note menus on your own posts with confirmations; not fired live |
 
+## Custom features
+
+| Feature | Status |
+|---|---|
+| Pinned tabs (tag / search / all-followed-tags) | ✅ live-verified (40–41 posts aggregated) |
+| Per-tab Latest/Top sort, persisted | ✅ |
+| Add / unpin dialogs | ✅ |
+| Keyword filtering | ⏳ |
+| Local bookmarks | ⏳ |
+| Session management | 🟡 sign-in + browser fallback; multi-account ⏳ |
+
 ## 4. Tests
 
 `dotnet test` — 11 tests: NPF formatting splits, heading/quote/list mapping,

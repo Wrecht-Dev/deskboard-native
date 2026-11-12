@@ -15,7 +15,7 @@
 
     <!-- left rail -->
     <Border Grid.Column="0" Background="{DynamicResource RailBrush}">
-      <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="0,20,0,16">
+      <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" Margin="0,20,0,16">
         <TextBlock Grid.Row="0" Text="tumblr" FontSize="30" FontWeight="Black"
                    Foreground="{DynamicResource TextBrush}" Margin="28,0,0,18" />
         <TextBox Grid.Row="1" Name="SearchBox" Watermark="Search Tumblr" Margin="18,0,18,10"
@@ -28,7 +28,29 @@
             </DataTemplate>
           </ListBox.ItemTemplate>
         </ListBox>
-        <StackPanel Grid.Row="4" Spacing="10" Margin="20,0">
+        <StackPanel Grid.Row="3" Margin="10,8,10,0" Spacing="3" IsVisible="{Binding HasPinnedTabs}">
+          <Grid ColumnDefinitions="*,Auto" Margin="8,0,4,2">
+            <TextBlock Text="PINNED" Classes="dim" FontSize="10" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Content="+" FontSize="14" Padding="7,0" Background="Transparent"
+                    Foreground="{DynamicResource DimBrush}" Click="OnAddPinned" ToolTip.Tip="Pin a tab" />
+          </Grid>
+          <ItemsControl ItemsSource="{Binding PinnedTabs}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Button Click="OnPinnedTab" Background="Transparent" Padding="10,6"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="{Binding Title}" FontSize="13" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="1" Text="{Binding SortLabel}" Classes="dim"
+                               FontSize="10" VerticalAlignment="Center" />
+                  </Grid>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+
+        <StackPanel Grid.Row="5" Spacing="10" Margin="20,0">
           <TextBlock Text="{Binding Identity}" Classes="dim" FontSize="12" />
           <Button Classes="accent" Content="Create" HorizontalAlignment="Stretch" Click="OnCreate" />
           <Button Content="Settings" Click="OnSettings" FontSize="12" HorizontalAlignment="Stretch" />
@@ -57,6 +79,14 @@
             <Button Content="Follow" Classes="accent" Click="OnFollow"
                     IsVisible="{Binding !IsFollowing}" />
             <Button Content="Following" Click="OnFollow" IsVisible="{Binding IsFollowing}" />
+          </StackPanel>
+          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6"
+                      IsVisible="{Binding IsPinnedTab}" VerticalAlignment="Center">
+            <Button Content="Latest" Classes="chip" FontSize="13" Padding="12,5"
+                    Command="{Binding SetPinnedSortCommand}" CommandParameter="latest" />
+            <Button Content="Top" Classes="chip" FontSize="13" Padding="12,5"
+                    Command="{Binding SetPinnedSortCommand}" CommandParameter="top" />
+            <Button Content="Unpin" Command="{Binding RemoveActivePinnedCommand}" FontSize="12" />
           </StackPanel>
           <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6"
                       IsVisible="{Binding IsTagPage}" VerticalAlignment="Center">

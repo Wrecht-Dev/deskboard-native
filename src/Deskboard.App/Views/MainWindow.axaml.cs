@@ -140,6 +140,21 @@ public partial class MainWindow : Window
         catch (Exception) { /* no handler for this scheme */ }
     }
 
+    private void OnPinnedTab(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainViewModel vm) return;
+        if ((sender as Control)?.DataContext is Services.PinnedTab tab)
+            _ = vm.OpenPinnedTabAsync(tab);
+    }
+
+    private async void OnAddPinned(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainViewModel vm) return;
+        var dialog = new AddPinnedTabWindow();
+        await dialog.ShowDialog(this);
+        if (dialog.Result is { } tab) vm.AddPinnedTab(tab);
+    }
+
     private void OnSearchKey(object? sender, Avalonia.Input.KeyEventArgs e)
     {
         if (e.Key != Avalonia.Input.Key.Enter) return;

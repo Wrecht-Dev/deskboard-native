@@ -173,12 +173,14 @@ public sealed partial class MainViewModel : ObservableObject
     private string _tagSort = "latest";
     private string _blog = "";
     private string _selfBlog = "";
+    private int _pinnedAggOffset;
 
     public ObservableCollection<PostItemViewModel> Posts { get; } = new();
     public ObservableCollection<string> Blogs { get; } = new();
     public ObservableCollection<BlogRowViewModel> SearchBlogs { get; } = new();
     public ObservableCollection<NotificationItemViewModel> Notifications { get; } = new();
     public ObservableCollection<string> SearchTags { get; } = new();
+    public ObservableCollection<PinnedTab> PinnedTabs { get; } = new();
     public ObservableCollection<ConversationItemViewModel> Conversations { get; } = new();
     public ObservableCollection<MessageItemViewModel> ThreadMessages { get; } = new();
     public TumblrClient Client => _client;
@@ -226,6 +228,11 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _canAsk;
     [ObservableProperty] private bool _canSubmitBlog;
     [ObservableProperty] private bool _hasMoreNotifications;
+    [ObservableProperty] private PinnedTab? _activePinnedTab;
+    [ObservableProperty] private bool _isPinnedTab;
+    [ObservableProperty] private bool _isPinnedLatest = true;
+    [ObservableProperty] private bool _isPinnedTop;
+    [ObservableProperty] private bool _hasPinnedTabs;
     [ObservableProperty] private bool _canAskAnon;
     [ObservableProperty] private bool _isFollowBusy;
     [ObservableProperty] private bool _isLatest = true;
@@ -239,6 +246,7 @@ public sealed partial class MainViewModel : ObservableObject
     public MainViewModel()
     {
         _demoMode = Environment.GetEnvironmentVariable("DESKBOARD_DEMO") == "1";
+        LoadPinnedTabs();
         SelectedFeed = Feeds[0];
         if (_demoMode)
         {
@@ -389,6 +397,116 @@ public sealed partial class MainViewModel : ObservableObject
             HasStatus = true;
             Status = ex is TumblrException ? ex.Message : $"Couldn't follow: {ex.Message}";
         }
+    }
+
+    public void LoadPinnedTabs()
+    {
+        PinnedTabs.Clear();
+        foreach (var tab in PinnedTabStore.Load()) PinnedTabs.Add(tab);
+        HasPinnedTabs = PinnedTabs.Count > 0;
+    }
+
+    public void SavePinnedTabs() => PinnedTabStore.Save(PinnedTabs);
+
+    public void AddPinnedTab(PinnedTab tab)
+    {
+        PinnedTabs.Add(tab);
+        HasPinnedTabs = true;
+        SavePinnedTabs();
+        _ = OpenPinnedTabAsync(tab);
+    }
+
+    [RelayCommand]
+    public void RemoveActivePinned()
+    {
+        if (ActivePinnedTab is not { } tab) return;
+        PinnedTabs.Remove(tab);
+        HasPinnedTabs = PinnedTabs.Count > 0;
+        SavePinnedTabs();
+        ActivePinnedTab = null;
+        IsPinnedTab = false;
+        IsPinnedLatest = true; IsPinnedTop = false;
+        Headline = SelectedFeed?.Label ?? "Home";
+        _ = LoadFeedAsync();
+    }
+
+    [RelayCommand]
+    public async Task OpenPinnedTabAsync(PinnedTab tab)
+    {
+        ActivePinnedTab = tab;
+        IsPinnedTab = true;
+        IsTagPage = false;
+        IsBlogPage = false;
+        IsNotificationsPage = false;
+        IsMessagesPage = false;
+        IsLibraryPage = false;
+        CanGoBack = false;
+        _pinnedAggOffset = 0;
+        IsPinnedLatest = tab.Sort != "top";
+        IsPinnedTop = tab.Sort == "top";
+        Headline = tab.Title;
+        Subhead = tab.Kind == "your-tags" ? "all followed tags" : $"{tab.KindLabel} · {tab.SortLabel}";
+        await LoadPostsAsync(() => PinnedPageAsync(tab));
+    }
+
+    [RelayCommand]
+    public async Task SetPinnedSortAsync(string sort)
+    {
+        if (ActivePinnedTab is not { } tab) return;
+        tab.Sort = sort == "top" ? "top" : "latest";
+        IsPinnedLatest = tab.Sort == "latest";
+        IsPinnedTop = tab.Sort == "top";
+        SavePinnedTabs();
+        Headline = tab.Title;
+        _pinnedAggOffset = 0;
+        await LoadPostsAsync(() => PinnedPageAsync(tab));
+    }
+
+    private async Task<Paged<Post>> PinnedPageAsync(PinnedTab tab)
+    {
+        switch (tab.Kind)
+        {
+            case "search":
+                return await _client.SearchPostsAsync(tab.Value);
+            case "your-tags":
+                return await YourTagsPageAsync(tab.Sort);
+            default:
+                return await _client.GetTaggedAsync(tab.Value, tab.Sort);
+        }
+    }
+
+    /// <summary>Custom feature: one feed built from all followed tags, sortable.</summary>
+    private async Task<Paged<Post>> YourTagsPageAsync(string sort)
+    {
+        var tags = (await _client.GetFollowedTagsAsync())
+            .Where(t => t.Length > 0 && !t.Contains('/') && !t.Contains('?'))
+            .ToList();
+        if (tags.Count == 0) return new Paged<Post>();
+        var batch = tags.Skip(_pinnedAggOffset).Take(6).ToList();
+        if (batch.Count == 0)
+        {
+            _pinnedAggOffset = 0;
+            batch = tags.Take(6).ToList();
+        }
+
+        // One bad tag (deleted, renamed, NSFW-gated) must not sink the whole tab.
+        var pages = await Task.WhenAll(batch.Select(async tag =>
+        {
+            try { return await _client.GetTaggedAsync(tag, sort); }
+            catch (Exception) { return new Paged<Post>(); }
+        }));
+        var seen = new HashSet<string>();
+        var posts = new List<Post>();
+        foreach (var page in pages)
+            foreach (var post in page.Items)
+                if (post.Id.Length > 0 && seen.Add(post.Id)) posts.Add(post);
+
+        if (sort == "top") posts.Sort((a, b) => b.NoteCount.CompareTo(a.NoteCount));
+        else posts.Sort((a, b) => b.Timestamp.CompareTo(a.Timestamp));
+
+        _pinnedAggOffset += batch.Count;
+        if (_pinnedAggOffset >= tags.Count) _pinnedAggOffset = 0;
+        return new Paged<Post> { Items = posts };
     }
 
     private async Task LoadNotificationsAsync(bool reset = true)

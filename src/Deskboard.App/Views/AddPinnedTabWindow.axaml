@@ -1,0 +1,35 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Deskboard.App.Views.AddPinnedTabWindow"
+        Title="Pin a tab" Width="440" Height="400"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource PageBrush}">
+  <StackPanel Margin="22" Spacing="10">
+    <TextBlock Text="Pin a tab" Classes="heading" />
+    <TextBlock Text="A pinned tab can aggregate a tag, a search, or every tag you follow — and remembers its own Latest/Top sort."
+               Classes="dim" FontSize="12" TextWrapping="Wrap" />
+
+    <TextBlock Text="Title" Classes="dim" FontSize="11" />
+    <TextBox Name="TitleBox" Watermark="e.g. Art" />
+    <TextBlock Text="Source" Classes="dim" FontSize="11" />
+    <ComboBox Name="KindBox" SelectedIndex="0" HorizontalAlignment="Stretch">
+      <ComboBoxItem Content="Tag" />
+      <ComboBoxItem Content="Search" />
+      <ComboBoxItem Content="All followed tags" />
+    </ComboBox>
+    <TextBlock Text="Tag or query (not used for all followed tags)" Classes="dim" FontSize="11" />
+    <TextBox Name="ValueBox" Watermark="art" />
+    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+      <TextBlock Text="Sort" Classes="dim" FontSize="11" VerticalAlignment="Center" />
+      <ComboBox Grid.Column="1" Name="SortBox" SelectedIndex="0" HorizontalAlignment="Stretch">
+        <ComboBoxItem Content="Latest" />
+        <ComboBoxItem Content="Top" />
+      </ComboBox>
+    </Grid>
+    <TextBlock Name="ErrorText" Foreground="#FF9A9A" FontSize="12" IsVisible="False" />
+    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8" Margin="0,6,0,0">
+      <Button Grid.Column="1" Content="Cancel" Click="OnCancel" />
+      <Button Grid.Column="2" Classes="accent" Content="Pin" Click="OnAdd" />
+    </Grid>
+  </StackPanel>
+</Window>
