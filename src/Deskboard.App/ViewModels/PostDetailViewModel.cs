@@ -18,8 +18,10 @@ public sealed partial class NoteViewModel : ObservableObject
     public string Initial { get; }
     [ObservableProperty] private Bitmap? _avatar;
 
-    public NoteViewModel(Note note)
+    public NoteViewModel(Note note, bool canModerate = false)
     {
+        Note = note;
+        CanModerate = canModerate;
         DisplayName = note.DisplayName;
         Action = note.Action;
         TimeAgo = Humanize(note.Timestamp);
@@ -28,6 +30,8 @@ public sealed partial class NoteViewModel : ObservableObject
     }
 
     public string AvatarUrl { get; }
+    public Note Note { get; }
+    public bool CanModerate { get; }
 
     public async Task LoadAsync()
     {
@@ -92,7 +96,8 @@ public sealed partial class PostDetailViewModel : ObservableObject
             if (_next is null) Notes.Clear();
             foreach (var note in page.Notes)
             {
-                var vm = new NoteViewModel(note);
+                var canModerate = Item.Post.BlogName.Equals(_blog, StringComparison.OrdinalIgnoreCase);
+                var vm = new NoteViewModel(note, canModerate);
                 Notes.Add(vm);
                 _ = vm.LoadAsync();
             }
@@ -131,6 +136,35 @@ public sealed partial class PostDetailViewModel : ObservableObject
             ReplyStatus = ex is TumblrException ? ex.Message : $"Couldn't reply: {ex.Message}";
         }
         finally { IsReplying = false; }
+    }
+
+    public async Task DeleteNoteAsync(NoteViewModel note)
+    {
+        try
+        {
+            await _client.DeleteNoteAsync(_blog, note.Note.BlogName, note.Note.Timestamp, Item.Post.Id);
+            Notes.Remove(note);
+            Status = "Note removed."; HasStatus = true;
+        }
+        catch (Exception ex)
+        {
+            Status = ex is TumblrException ? ex.Message : $"Couldn't remove the note: {ex.Message}";
+            HasStatus = true;
+        }
+    }
+
+    public async Task FlagNoteAsync(NoteViewModel note)
+    {
+        try
+        {
+            await _client.FlagNoteAsync(_blog, note.Note.BlogName, note.Note.Timestamp);
+            Status = "Note flagged."; HasStatus = true;
+        }
+        catch (Exception ex)
+        {
+            Status = ex is TumblrException ? ex.Message : $"Couldn't flag the note: {ex.Message}";
+            HasStatus = true;
+        }
     }
 
     [RelayCommand]

@@ -373,8 +373,11 @@ public sealed partial class TumblrClient : IDisposable
     public Task MutePostAsync(Post post, bool mute, CancellationToken ct = default)
     {
         var method = mute ? HttpMethod.Post : HttpMethod.Delete;
+        var form = mute
+            ? new Dictionary<string, string?> { ["mute_length_seconds"] = null }
+            : null;
         return SendWriteAsync(method, $"/v2/blog/{Uri.EscapeDataString(post.BlogName)}/posts/{post.Id}/mute",
-            form: mute ? PostBody(post) : null, ct: ct).AsVoid();
+            form: form, ct: ct).AsVoid();
     }
 
     public Task BlockBlogAsync(string blog, CancellationToken ct = default)
@@ -405,11 +408,36 @@ public sealed partial class TumblrClient : IDisposable
             form: null, ct: ct).AsVoid();
     }
 
-    // -------------------------------------------------------------- messaging --
-    /// <summary>Direct-message conversations.</summary>
-    public async Task<ConversationsPage> GetConversationsAsync(string? url = null, CancellationToken ct = default)
+    // -------------------------------------------------- notes moderation --
+    /// <summary>Remove a note (e.g. your own reply) from one of your posts.</summary>
+    public Task DeleteNoteAsync(string blog, string noteBlog, long noteCreatedTime, string postId,
+        CancellationToken ct = default)
+        => SendWriteAsync(HttpMethod.Post, $"/v2/blog/{Uri.EscapeDataString(blog)}/notes/delete",
+            form: new Dictionary<string, string?>
+            {
+                ["note_tumblelog"] = noteBlog,
+                ["note_created_time"] = noteCreatedTime.ToString(),
+                ["post_id"] = postId,
+            }, ct: ct).AsVoid();
+
+    public Task FlagNoteAsync(string blog, string flaggedBlog, long noteCreatedTime = 0,
+        CancellationToken ct = default)
     {
-        var path = url ?? "/v2/conversations?limit=20";
+        var form = new Dictionary<string, string?>
+        {
+            ["flagged_note_tumblelog_name"] = flaggedBlog,
+        };
+        if (noteCreatedTime > 0) form["flagged_note_created_time"] = noteCreatedTime.ToString();
+        return SendWriteAsync(HttpMethod.Post, $"/v2/blog/{Uri.EscapeDataString(blog)}/notes/flag",
+            form: form, ct: ct).AsVoid();
+    }
+
+    // -------------------------------------------------------------- messaging --
+    /// <summary>Direct-message conversations (or message requests).</summary>
+    public async Task<ConversationsPage> GetConversationsAsync(string? url = null, CancellationToken ct = default,
+        bool requests = false)
+    {
+        var path = url ?? (requests ? "/v2/conversations/requests?limit=20" : "/v2/conversations?limit=20");
         using var doc = await SendAsync(HttpMethod.Get, path, ct: ct).ConfigureAwait(false);
         return ParseConversations(doc.RootElement);
     }
@@ -513,6 +541,16 @@ public sealed partial class TumblrClient : IDisposable
         list.Sort((a, b) => a.Timestamp.CompareTo(b.Timestamp));
         return list;
     }
+
+    /// <summary>Accept a message request so it becomes a normal conversation.</summary>
+    public Task AcceptConversationAsync(string conversationId, string participant,
+        CancellationToken ct = default)
+        => SendWriteAsync(HttpMethod.Post, "/v2/conversations/accept",
+            form: new Dictionary<string, string?>
+            {
+                ["conversation_id"] = conversationId,
+                ["participant"] = participant,
+            }, ct: ct).AsVoid();
 
     /// <summary>Send a direct message to a participant (new or existing conversation).</summary>
     public Task SendMessageAsync(string participant, string text, string? conversationId = null,

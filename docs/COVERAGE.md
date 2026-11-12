@@ -25,7 +25,7 @@ Legend: ✅ working & verified live · 🟡 partial · ⏳ planned · ⛔ exclud
 | Messaging — conversations list | ✅ | 20 conversations live; unread badges, dates |
 | Messaging — thread | ✅ | authorship aligned bubbles, times, composer, optimistic send |
 | Messaging — send | 🟡 | wired + optimistic; not fired live (would message a real person) |
-| Messaging — requests | ⏳ | |
+| Messaging — requests | ✅ | Requests tab + Accept; account has 0 pending, API verified |
 | Inbox / drafts / queue | ⏳ | |
 | Inbox / drafts / queue pages | ✅ | Library page with Inbox/Drafts/Queue tabs, empty states verified; account has 0 items |
 | Post menu (mute / block / report / delete) | 🟡 | wired with confirmations for block/delete; not fired live |
@@ -62,7 +62,7 @@ Legend: ✅ working & verified live · 🟡 partial · ⏳ planned · ⛔ exclud
 | Composer — publish / queue / draft / schedule | 🟡 | all four wired; not fired live (would post publicly) |
 | Settings screen | ✅ | account + session state, blogs, appearance, about; re-import session |
 | Theme toggle (in-session) | 🟡 | command wired; persistence verified on restart; headless click unverified |
-| Notes moderation (delete/flag) | ⏳ | |
+| Notes moderation (delete/flag) | 🟡 | note menus on your own posts with confirmations; not fired live |
 
 ## 4. Tests
 

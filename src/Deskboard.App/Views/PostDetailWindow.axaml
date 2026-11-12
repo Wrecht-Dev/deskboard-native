@@ -67,7 +67,18 @@
                   <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="13" />
                   <TextBlock Text="{Binding Action}" Classes="dim" FontSize="12" />
                 </StackPanel>
-                <TextBlock Grid.Column="2" Text="{Binding TimeAgo}" Classes="dim" FontSize="12" />
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2">
+                  <TextBlock Text="{Binding TimeAgo}" Classes="dim" FontSize="12" VerticalAlignment="Center" />
+                  <Button Content="⋯" Background="Transparent" Padding="4,0" FontSize="13"
+                          Foreground="#9AA7B4" IsVisible="{Binding CanModerate}">
+                    <Button.Flyout>
+                      <MenuFlyout>
+                        <MenuItem Header="Delete note" Click="OnDeleteNote" />
+                        <MenuItem Header="Flag note" Click="OnFlagNote" />
+                      </MenuFlyout>
+                    </Button.Flyout>
+                  </Button>
+                </StackPanel>
               </Grid>
             </DataTemplate>
           </ItemsControl.ItemTemplate>

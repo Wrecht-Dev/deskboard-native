@@ -228,7 +228,12 @@
         <!-- conversations list -->
         <ScrollViewer IsVisible="{Binding IsMessagesPage}" Padding="34,0,34,24">
           <StackPanel Spacing="2" MaxWidth="640">
-            <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding InThread}" Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding !InThread}" Margin="0,0,0,10">
+            <Button Content="Inbox" Classes="chip" FontSize="13" Command="{Binding ShowInboxCommand}" />
+            <Button Content="Requests" Classes="chip" FontSize="13" Command="{Binding ShowRequestsCommand}" />
+          </StackPanel>
+
+          <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding InThread}" Margin="0,0,0,10">
               <Button Content="‹ Back" Command="{Binding BackToConversationsCommand}" />
               <TextBlock Text="{Binding ThreadTitle}" Classes="heading" VerticalAlignment="Center" />
             </StackPanel>

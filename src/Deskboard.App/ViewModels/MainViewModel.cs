@@ -204,6 +204,7 @@ public sealed partial class MainViewModel : ObservableObject
     partial void OnIsNotificationsPageChanged(bool value) => OnPropertyChanged(nameof(ShowFeed));
     partial void OnIsMessagesPageChanged(bool value) => OnPropertyChanged(nameof(ShowFeed));
     [ObservableProperty] private bool _inThread;
+    [ObservableProperty] private bool _showingRequests;
     [ObservableProperty] private bool _isLibraryPage;
     [ObservableProperty] private string _libraryKind = "inbox";
     [ObservableProperty] private string _libraryLabel = "Inbox";
@@ -509,16 +510,17 @@ public sealed partial class MainViewModel : ObservableObject
         finally { IsLoading = false; }
     }
 
-    private async Task LoadConversationsAsync()
+    private async Task LoadConversationsAsync(bool requests = false)
     {
         if (IsLoading) return;
+        ShowingRequests = requests;
         IsLoading = true;
         try
         {
             Conversations.Clear();
-            var page = await _client.GetConversationsAsync();
+            var page = await _client.GetConversationsAsync(requests: requests);
             foreach (var conversation in page.Conversations)
-                Conversations.Add(new ConversationItemViewModel(conversation, this));
+                Conversations.Add(new ConversationItemViewModel(conversation, this, requests));
             Subhead = $"{Conversations.Count} conversations";
             HasStatus = Conversations.Count == 0;
             Status = Conversations.Count == 0 ? "No messages yet." : "";
@@ -529,6 +531,30 @@ public sealed partial class MainViewModel : ObservableObject
             Status = ex is TumblrException ? ex.Message : $"Couldn't load messages: {ex.Message}";
         }
         finally { IsLoading = false; }
+    }
+
+    [RelayCommand]
+    public async Task ShowRequestsAsync() => await LoadConversationsAsync(requests: true);
+
+    [RelayCommand]
+    public async Task ShowInboxAsync() => await LoadConversationsAsync(requests: false);
+
+    public async Task AcceptRequestAsync(ConversationItemViewModel item)
+    {
+        var participant = item.Conversation.Participants
+            .FirstOrDefault(p => !p.Equals(Identity, StringComparison.OrdinalIgnoreCase))
+            ?? item.Conversation.Participants.FirstOrDefault() ?? "";
+        try
+        {
+            await _client.AcceptConversationAsync(item.Conversation.Id, participant);
+            Conversations.Remove(item);
+            Status = "Request accepted."; HasStatus = true;
+        }
+        catch (Exception ex)
+        {
+            Status = ex is TumblrException ? ex.Message : $"Couldn't accept: {ex.Message}";
+            HasStatus = true;
+        }
     }
 
     public async Task OpenConversationAsync(ConversationItemViewModel item)

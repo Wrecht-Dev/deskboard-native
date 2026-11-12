@@ -17,11 +17,16 @@ public sealed partial class ConversationItemViewModel : ObservableObject
     public string Initial { get; }
     public string UpdatedLabel { get; }
     public bool HasUnread => Conversation.Unread > 0;
+    public bool IsRequest { get; }
 
-    public ConversationItemViewModel(Conversation conversation, MainViewModel host)
+    [RelayCommand]
+    private Task Accept() => _host.AcceptRequestAsync(this);
+
+    public ConversationItemViewModel(Conversation conversation, MainViewModel host, bool isRequest = false)
     {
         Conversation = conversation;
         _host = host;
+        IsRequest = isRequest;
         var others = conversation.Participants
             .Where(p => !p.Equals(host.Identity, StringComparison.OrdinalIgnoreCase))
             .ToList();
