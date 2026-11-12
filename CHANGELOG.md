@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.6 — Beta
+
+- Fix reblogs: images/photosets, trail body text and provenance now come from the
+  reblog trail (regression test added).
+
 ## 0.2.5 — Beta
 
 - Settings write methods complete the documented API surface.

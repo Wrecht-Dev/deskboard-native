@@ -22,9 +22,17 @@ public sealed record ParagraphViewModel(ParagraphKind Kind, IReadOnlyList<RunVie
 /// </summary>
 public static class RichTextBuilder
 {
-    /// <summary>Blocks that belong to the post body (content, else reblog trail).</summary>
+    /// <summary>
+    /// Blocks that belong to the post body. A reblog carries the reblogger's new
+    /// blocks in <c>content</c> and the original post in <c>trail</c>, so both are
+    /// concatenated in order (comment first, then what was reblogged).
+    /// </summary>
     public static IReadOnlyList<Block> BodyBlocks(Post post)
-        => post.Content.Count > 0 ? post.Content : post.Trail.SelectMany(t => t.Content).ToList();
+    {
+        var blocks = new List<Block>(post.Content);
+        foreach (var item in post.Trail) blocks.AddRange(item.Content);
+        return blocks;
+    }
 
     public static List<ParagraphViewModel> Build(Post post)
     {

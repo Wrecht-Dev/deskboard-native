@@ -41,6 +41,14 @@ Only `like`/`unlike` has been exercised live (with explicit permission).
 - **Mature filter** — honours Tumblr's `isAdult` flag, which the API often leaves
   false even for explicit blogs; keyword filters are the dependable control.
 
+## Fixed after Beta feedback
+
+- **Reblog rendering**: NPF reblogs have an empty `content` and put the original
+  post in `trail[]`; media and body were read from `content` only, so reblog
+  images vanished. Body now concatenates the reblogger's comment with every trail
+  item, media is merged from both and de-duplicated, provenance falls back to the
+  trail author, and the permalink renders photosets.
+
 ## Formerly missing, now implemented
 
 - **Blog / account settings reads** — 39 blog keys and 34 account keys returned

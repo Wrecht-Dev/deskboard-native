@@ -48,6 +48,18 @@
             <Border IsVisible="{Binding Item.SingleMedia}" CornerRadius="8" ClipToBounds="True" Background="#0F0F0F">
               <Image Source="{Binding Item.Media[0].Bitmap}" Stretch="Uniform" MaxHeight="{Binding Item.Media[0].Height}" />
             </Border>
+            <ItemsControl ItemsSource="{Binding Item.Media}" IsVisible="{Binding Item.MultipleMedia}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><UniformGrid Columns="2" /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:MediaItemViewModel">
+                  <Border CornerRadius="6" ClipToBounds="True" Margin="0,0,4,4" Background="#0F0F0F">
+                    <Image Source="{Binding Bitmap}" Stretch="UniformToFill" Height="{Binding Height}" />
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
             <TextBlock Text="{Binding Item.TagsText}" Classes="tag" FontSize="13"
                        IsVisible="{Binding Item.HasTags}" />
           </StackPanel>

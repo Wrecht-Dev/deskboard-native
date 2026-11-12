@@ -104,14 +104,19 @@ public sealed partial class PostItemViewModel : ObservableObject
         FirstTag = post.Tags.FirstOrDefault() ?? "";
         HasTags = TagsText.Length > 0;
         HasReblogLabel = post.IsReblog;
+        var trailAuthor = post.Trail.Count > 0 ? post.Trail[^1].BlogName : "";
         RebloggedFrom = post.RebloggedFromName.Length > 0
             ? $"reblogged from @{post.RebloggedFromName}"
-            : "reblogged";
+            : trailAuthor.Length > 0 ? $"reblogged from @{trailAuthor}" : "reblogged";
+        HasReblogLabel = post.IsReblog;
         BodyText = ExtractText(post);
         Paragraphs = RichTextBuilder.Build(post);
         HasBody = Paragraphs.Count > 0;
-        foreach (var media in post.Content.SelectMany(b => b.Media)
-                     .Where(m => m.Kind is "image" or "video" or "audio").Take(4))
+        var seenMedia = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var media in RichTextBuilder.BodyBlocks(post).SelectMany(b => b.Media)
+                     .Where(m => m.Kind is "image" or "video" or "audio")
+                     .Where(m => m.Url.Length > 0 && seenMedia.Add(m.Url))
+                     .Take(4))
             Media.Add(new MediaItemViewModel(media));
     }
 

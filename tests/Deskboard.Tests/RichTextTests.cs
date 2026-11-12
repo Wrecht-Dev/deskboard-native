@@ -87,6 +87,23 @@ public class RichTextTests
     }
 
     [Fact]
+    public void ReblogCombinesOwnCommentThenTheTrail()
+    {
+        var post = new Deskboard.Core.Models.Post
+        {
+            Content = new List<Block> { Text("my comment") },
+            Trail = new List<TrailItem>
+            {
+                new() { BlogName = "original", Content = new List<Block> { Text("original words") } },
+                new() { BlogName = "middle", Content = new List<Block> { Text("middle words") } },
+            },
+        };
+        var paragraphs = RichTextBuilder.Build(post);
+        Assert.Equal(new[] { "my comment", "original words", "middle words" },
+            paragraphs.Select(p => p.PlainText).ToArray());
+    }
+
+    [Fact]
     public void ReblogTrailIsUsedWhenContentEmpty()
     {
         var post = new Deskboard.Core.Models.Post

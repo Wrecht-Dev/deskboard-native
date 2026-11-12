@@ -37,7 +37,8 @@ Legend: ✅ working & verified live · 🟡 partial · ⏳ planned · ⛔ exclud
 | Capability | Status | Notes |
 |---|---|---|
 | Header (avatar, blog, time) | ✅ | circular avatar, loaded with UA+Referer |
-| Reblog provenance | ✅ | "reblogged from @x" |
+| Reblog provenance | ✅ | "reblogged from @x"; falls back to the trail author |
+| Reblog body/media from trail | ✅ | NPF reblogs carry the original in `trail[]`; body and media now merge comment + trail (regression-tested) |
 | Text blocks (headings/quotes/lists) | ✅ | NPF formatting → styled runs (bold/italic/strike/underline/links), headings, quotes, bullets |
 | Photoset grids (1–4 images) | ✅ | single image or 2-col grid, lazy + cached |
 | Animated GIFs | ✅ | Skia frame decode + timer playback; verified animating (frame captures differ) |

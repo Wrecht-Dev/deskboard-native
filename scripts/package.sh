@@ -11,7 +11,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 APP="$ROOT/src/Deskboard.App/Deskboard.App.csproj"
 STAGE="$OUT/stage-$RID"
 NAME="deskboard-native-$RID"
-VERSION="${VERSION:-0.2.5}"
+VERSION="${VERSION:-0.2.6}"
 
 rm -rf "$STAGE"; mkdir -p "$STAGE/$NAME"
 
