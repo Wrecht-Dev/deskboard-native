@@ -22,7 +22,7 @@ Legend: ✅ working & verified live · 🟡 partial · ⏳ planned · ⛔ exclud
 | Tag pages (Latest / Top) | ✅ | `/v2/hubs/{tag}/timeline[?sort=top]` with toggle |
 | Post permalink + notes | ✅ | notes with totals (likes/reblogs/replies), pagination, reply composer |
 | Search (posts / blogs / communities) | 🟡 | API verified live (5 posts, 5 blogs, 5 communities); UI wired (search box + results); keyboard input not injectable under headless Xvfb, so UI unverified |
-| Notifications / Activity | 🟡 | API verified live (48, paginated); list UI with follow-back; no screenshot for privacy |
+| Notifications / Activity | ✅ | 48 → 98 via cursor pagination (scroll + Load more); fromTumblelog* names/avatars; follow-back |
 | Notifications | ⏳ | |
 | Messaging — conversations list | ✅ | 20 conversations live; unread badges, dates |
 | Messaging — thread | ✅ | authorship aligned bubbles, times, composer, optimistic send |

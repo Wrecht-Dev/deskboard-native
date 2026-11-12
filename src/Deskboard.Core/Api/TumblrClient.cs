@@ -693,15 +693,30 @@ public sealed partial class TumblrClient : IDisposable
             foreach (var n in arr.EnumerateArray())
             {
                 if (n.ValueKind != JsonValueKind.Object) continue;
+                // Activity uses fromTumblelog* rather than the note/blog field names.
+                var blogName = n.Str("fromTumblelogName");
+                if (blogName.Length == 0) blogName = n.Str("blogName");
+
+                var avatar = n.Str("avatarUrl");
+                if (avatar.Length == 0 && n.TryGetProperty("fromTumblelogAvatars", out var avatars) &&
+                    avatars.ValueKind == JsonValueKind.Array)
+                {
+                    var best = avatars.EnumerateArray()
+                        .Where(a => a.Str("url").Length > 0)
+                        .OrderByDescending(a => a.Num("width"))
+                        .FirstOrDefault();
+                    if (best.ValueKind == JsonValueKind.Object) avatar = best.Str("url");
+                }
+
                 notifications.Add(new Notification
                 {
                     Type = n.Str("type"),
                     Timestamp = n.Num("timestamp"),
-                    BlogName = n.Str("blogName"),
+                    BlogName = blogName,
                     BlogTitle = n.Str("blogTitle"),
                     BlogUrl = n.Str("blogUrl"),
-                    AvatarUrl = n.Str("avatarUrl"),
-                    PostId = n.Str("postId"),
+                    AvatarUrl = avatar,
+                    PostId = n.Str("postId") is { Length: > 0 } pid ? pid : n.Str("targetPostId"),
                     ReplyText = n.Str("replyText"),
                     AskQuestion = n.Str("askQuestion"),
                     Followed = n.Bool("followed"),

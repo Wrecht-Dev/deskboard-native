@@ -203,7 +203,8 @@
           </ListBox.ItemTemplate>
         </ListBox>
   
-        <ScrollViewer IsVisible="{Binding IsNotificationsPage}" Padding="34,0,34,24">
+        <ScrollViewer Name="NotificationsScroll" IsVisible="{Binding IsNotificationsPage}" Padding="34,0,34,24"
+                      ScrollChanged="OnNotificationsScroll">
           <StackPanel Spacing="2" MaxWidth="640">
             <ItemsControl ItemsSource="{Binding Notifications}">
               <ItemsControl.ItemTemplate>
@@ -225,6 +226,9 @@
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
+            <Button Content="Load more" Command="{Binding LoadMoreNotificationsCommand}"
+                    IsVisible="{Binding HasMoreNotifications}" HorizontalAlignment="Center"
+                    Margin="0,12,0,20" />
           </StackPanel>
         </ScrollViewer>
   

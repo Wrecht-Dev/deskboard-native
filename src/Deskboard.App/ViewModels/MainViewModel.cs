@@ -169,8 +169,10 @@ public sealed partial class MainViewModel : ObservableObject
 {
     private readonly TumblrClient _client = new();
     private string? _next;
+    private string? _notificationsNext;
     private string _tagSort = "latest";
     private string _blog = "";
+    private string _selfBlog = "";
 
     public ObservableCollection<PostItemViewModel> Posts { get; } = new();
     public ObservableCollection<string> Blogs { get; } = new();
@@ -181,7 +183,7 @@ public sealed partial class MainViewModel : ObservableObject
     public ObservableCollection<MessageItemViewModel> ThreadMessages { get; } = new();
     public TumblrClient Client => _client;
     public bool ShowFeed => !IsNotificationsPage && !IsMessagesPage;
-    public string PrimaryBlog => _blog;
+    public string PrimaryBlog => _selfBlog.Length > 0 ? _selfBlog : _blog;
 
     public List<FeedOption> Feeds { get; } = new()
     {
@@ -223,6 +225,7 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _blogFollowersLabel = "";
     [ObservableProperty] private bool _canAsk;
     [ObservableProperty] private bool _canSubmitBlog;
+    [ObservableProperty] private bool _hasMoreNotifications;
     [ObservableProperty] private bool _canAskAnon;
     [ObservableProperty] private bool _isFollowBusy;
     [ObservableProperty] private bool _isLatest = true;
@@ -293,6 +296,7 @@ public sealed partial class MainViewModel : ObservableObject
             {
                 var (name, blogs) = await _client.GetIdentityAsync();
                 _blog = blogs.FirstOrDefault() ?? name;
+                _selfBlog = _blog;
                 Identity = name;
                 Blogs.Clear();
                 foreach (var blog in blogs) Blogs.Add(blog);
@@ -387,20 +391,32 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
-    private async Task LoadNotificationsAsync()
+    private async Task LoadNotificationsAsync(bool reset = true)
     {
         if (IsLoading) return;
         IsLoading = true;
         try
         {
-            Notifications.Clear();
-            var page = await _client.GetNotificationsAsync(_blog);
+            // Activity needs the signed-in blog name; a cold start may not have it yet.
+            await EnsureIdentityAsync();
+            if (string.IsNullOrEmpty(PrimaryBlog))
+            {
+                HasStatus = true;
+                Status = "Sign in first — Activity is per blog.";
+                return;
+            }
+
+            var url = reset ? null : _notificationsNext;
+            var page = await _client.GetNotificationsAsync(PrimaryBlog, url);
+            if (reset) Notifications.Clear();
             foreach (var n in page.Notifications)
             {
                 var vm = new NotificationItemViewModel(n, this);
                 Notifications.Add(vm);
                 _ = vm.LoadAsync();
             }
+            _notificationsNext = page.NextUrl;
+            HasMoreNotifications = page.NextUrl is not null;
             Subhead = $"{Notifications.Count} recent";
             HasStatus = Notifications.Count == 0;
             Status = Notifications.Count == 0 ? "No activity yet." : "";
@@ -411,6 +427,13 @@ public sealed partial class MainViewModel : ObservableObject
             Status = ex is TumblrException ? ex.Message : $"Couldn't load activity: {ex.Message}";
         }
         finally { IsLoading = false; }
+    }
+
+    [RelayCommand]
+    public async Task LoadMoreNotificationsAsync()
+    {
+        if (IsLoading || _notificationsNext is null) return;
+        await LoadNotificationsAsync(reset: false);
     }
 
     [RelayCommand]
@@ -764,6 +787,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             var (name, blogs) = await _client.GetIdentityAsync();
             _blog = blogs.FirstOrDefault() ?? name;
+            _selfBlog = _blog;
             Identity = name;
             Blogs.Clear();
             foreach (var blog in blogs) Blogs.Add(blog);

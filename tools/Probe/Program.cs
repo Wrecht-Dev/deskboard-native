@@ -1,6 +1,8 @@
 using Deskboard.Core.Api;
 var client = new TumblrClient();
-var result = await client.LoginAsync("deskboard-test@example.invalid", "not-a-real-password-123");
-Console.WriteLine($"status={result.Status} cookies={result.CookieCount} message={result.Message}");
-var bad = SetCookieParser.Parse(new[] { "sid=abc123; Path=/; Domain=.tumblr.com; Secure", "tmgioct=xyz; Path=/", "badcookie" });
-Console.WriteLine($"parsed: {string.Join(",", bad.Select(kv => kv.Key + "=" + kv.Value))}");
+await client.EnsureTokenAsync();
+var (name, blogs) = await client.GetIdentityAsync();
+var page = await client.GetNotificationsAsync(blogs.FirstOrDefault() ?? name);
+Console.WriteLine($"notifications={page.Notifications.Count} next={page.NextUrl is not null}");
+foreach (var n in page.Notifications.Take(3))
+    Console.WriteLine($"  {n.Type,-8} from={n.BlogName,-22} avatar={(n.AvatarUrl.Length > 0 ? "yes" : "no")} followBack={n.NeedsFollowBack}");

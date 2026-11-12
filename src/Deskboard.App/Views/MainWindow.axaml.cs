@@ -174,6 +174,14 @@ public partial class MainWindow : Window
         await window.ShowDialog(this);
     }
 
+    private void OnNotificationsScroll(object? sender, ScrollChangedEventArgs e)
+    {
+        if (DataContext is not MainViewModel vm || sender is not ScrollViewer scroller) return;
+        if (scroller.Extent.Height <= 0) return;
+        if (scroller.Offset.Y + scroller.Viewport.Height > scroller.Extent.Height - 400)
+            _ = vm.LoadMoreNotificationsAsync();
+    }
+
     private void OnScrollChanged(object? sender, ScrollChangedEventArgs e)
     {
         if (DataContext is not MainViewModel vm) return;
