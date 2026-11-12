@@ -1,0 +1,26 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:Deskboard.App.Controls"
+        x:Class="Deskboard.App.Views.ViewerWindow"
+        Title="Viewer" Width="1100" Height="820"
+        WindowStartupLocation="CenterOwner"
+        Background="#0B0B0B">
+  <Grid>
+    <ScrollViewer Name="Scroller" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+      <Image Name="Picture" Stretch="None" HorizontalAlignment="Center" VerticalAlignment="Center" />
+    </ScrollViewer>
+
+    <controls:AnimatedGif Name="Animation" IsVisible="False" Stretch="Uniform"
+                          HorizontalAlignment="Center" VerticalAlignment="Center" />
+
+    <Border VerticalAlignment="Top" HorizontalAlignment="Right" Margin="12" Background="#99000000"
+            CornerRadius="8" Padding="4">
+      <StackPanel Orientation="Horizontal" Spacing="4">
+        <Button Content="−" Name="ZoomOut" Click="OnZoomOut" />
+        <Button Content="+" Name="ZoomIn" Click="OnZoomIn" />
+        <Button Content="Fit" Name="Fit" Click="OnFit" />
+        <Button Content="✕" Click="OnClose" />
+      </StackPanel>
+    </Border>
+  </Grid>
+</Window>

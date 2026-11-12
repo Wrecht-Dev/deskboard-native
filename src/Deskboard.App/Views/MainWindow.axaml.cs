@@ -155,6 +155,14 @@ public partial class MainWindow : Window
         if (dialog.Result is { } tab) vm.AddPinnedTab(tab);
     }
 
+    private void OnMediaPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
+    {
+        if ((sender as Control)?.DataContext is not PostItemViewModel item) return;
+        if (item.Media.Count == 0) return;
+        var media = item.Media[0];
+        _ = ViewerWindow.ShowAsync(this, media.Url, media.IsGif);
+    }
+
     private void OnMoveUp(object? sender, RoutedEventArgs e) => Move(sender, -1);
     private void OnMoveDown(object? sender, RoutedEventArgs e) => Move(sender, 1);
 

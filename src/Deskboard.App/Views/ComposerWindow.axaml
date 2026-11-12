@@ -43,8 +43,19 @@
     </StackPanel>
 
     <StackPanel Spacing="10">
-      <TextBox Text="{Binding Text}" AcceptsReturn="True" TextWrapping="Wrap" Height="240"
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <ComboBox SelectedIndex="{Binding PostTypeIndex}" MinWidth="140">
+          <ComboBoxItem Content="Text" />
+          <ComboBoxItem Content="Quote" />
+          <ComboBoxItem Content="Link" />
+        </ComboBox>
+      </StackPanel>
+      <TextBox Text="{Binding Text}" AcceptsReturn="True" TextWrapping="Wrap" Height="200"
                Watermark="What's on your mind?" />
+      <StackPanel Spacing="6" IsVisible="{Binding IsLink}">
+        <TextBox Text="{Binding LinkUrl}" Watermark="https://…" />
+        <TextBox Text="{Binding LinkTitle}" Watermark="Link title (optional)" />
+      </StackPanel>
       <TextBox Text="{Binding Tags}" Watermark="tags: comma, separated" />
       <TextBlock Text="{Binding MediaLabel}" Classes="dim" FontSize="12" />
     </StackPanel>

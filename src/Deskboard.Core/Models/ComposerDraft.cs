@@ -4,6 +4,10 @@ namespace Deskboard.Core.Models;
 public sealed class ComposerDraft
 {
     public string Text { get; set; } = "";
+    /// <summary>text | quote | link | photo</summary>
+    public string PostType { get; set; } = "text";
+    public string LinkUrl { get; set; } = "";
+    public string LinkTitle { get; set; } = "";
     public string Tags { get; set; } = "";
     public List<UploadedMedia> Images { get; } = new();
 }

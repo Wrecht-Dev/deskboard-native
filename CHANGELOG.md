@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.2 — Beta
+
+- Composer post types: Text / Quote / Link (NPF blocks, unit-tested).
+- Full-size media viewer with zoom in/out/fit.
+- Sign out, retry-on-error, queue reorder.
+
 ## 0.2.1 — Beta
 
 - First-run welcome screen (sign in / browser session / browse).

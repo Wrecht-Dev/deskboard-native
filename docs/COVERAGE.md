@@ -59,7 +59,8 @@ Legend: ✅ working & verified live · 🟡 partial · ⏳ planned · ⛔ exclud
 | Ask | ✅ | dialog with 500-char counter + anonymous toggle, gated on blog capability |
 | Submit post | 🟡 | compose + submit to blogs with can_submit; not fired live |
 | DM send / accept / read / delete | ⏳ | |
-| Composer — text + tags | ✅ | NPF content builder, blog selector, live char counter |
+| Composer — text/quote/link + tags | ✅ | NPF block types; unit-tested |
+| Media lightbox | 🟡 | full-size viewer with zoom; compiled, not screenshot-verified |
 | Composer — image upload | 🟡 | multipart upload + image blocks; not fired live (creates account media) |
 | Composer — publish / queue / draft / schedule | 🟡 | all four wired; not fired live (would post publicly) |
 | Edit post | 🟡 | composer prefilled, PUT rewrite wired; not fired live |

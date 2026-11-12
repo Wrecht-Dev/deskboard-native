@@ -25,6 +25,9 @@ public sealed partial class ComposerViewModel : ObservableObject
     [ObservableProperty] private string _selectedBlog = "";
     [ObservableProperty] private string _text = "";
     [ObservableProperty] private string _tags = "";
+    [ObservableProperty] private int _postTypeIndex;
+    [ObservableProperty] private string _linkUrl = "";
+    [ObservableProperty] private string _linkTitle = "";
     [ObservableProperty] private string _status = "";
     [ObservableProperty] private bool _hasStatus;
     [ObservableProperty] private bool _isBusy;
@@ -44,8 +47,13 @@ public sealed partial class ComposerViewModel : ObservableObject
 
     public string CharacterLabel => $"{Text.Length}";
     public string MediaLabel => Images.Count == 0 ? "" : $"{Images.Count} media attached";
+    public string PostType => PostTypeIndex switch { 1 => "quote", 2 => "link", _ => "text" };
+    public bool IsLink => PostTypeIndex == 2;
+    public bool IsQuote => PostTypeIndex == 1;
+
     public bool CanSubmit => !IsBusy && SelectedBlog.Length > 0 &&
-                             (Text.Trim().Length > 0 || Images.Count > 0);
+                             (Text.Trim().Length > 0 || Images.Count > 0 ||
+                              (IsLink && LinkUrl.Trim().Length > 0));
 
     public event EventHandler<string>? Completed;
 
@@ -90,7 +98,14 @@ public sealed partial class ComposerViewModel : ObservableObject
         Status = "Saving…";
         try
         {
-            var draft = new ComposerDraft { Text = Text, Tags = Tags };
+            var draft = new ComposerDraft
+            {
+                Text = Text,
+                Tags = Tags,
+                PostType = PostType,
+                LinkUrl = LinkUrl,
+                LinkTitle = LinkTitle,
+            };
             foreach (var image in Images) draft.Images.Add(image);
             await _client.EditPostAsync(_editBlog, _editPostId, draft);
             Completed?.Invoke(this, "Post updated.");
@@ -110,7 +125,14 @@ public sealed partial class ComposerViewModel : ObservableObject
         Status = "Submitting…";
         try
         {
-            var draft = new ComposerDraft { Text = Text, Tags = Tags };
+            var draft = new ComposerDraft
+            {
+                Text = Text,
+                Tags = Tags,
+                PostType = PostType,
+                LinkUrl = LinkUrl,
+                LinkTitle = LinkTitle,
+            };
             foreach (var image in Images) draft.Images.Add(image);
             await _client.SubmitPostAsync(SelectedBlog, draft);
             Completed?.Invoke(this, $"Submitted to {SelectedBlog} for review.");
@@ -131,6 +153,16 @@ public sealed partial class ComposerViewModel : ObservableObject
     }
 
     partial void OnIsBusyChanged(bool value) => OnPropertyChanged(nameof(CanSubmit));
+
+    partial void OnPostTypeIndexChanged(int value)
+    {
+        OnPropertyChanged(nameof(PostType));
+        OnPropertyChanged(nameof(IsLink));
+        OnPropertyChanged(nameof(IsQuote));
+        OnPropertyChanged(nameof(CanSubmit));
+    }
+
+    partial void OnLinkUrlChanged(string value) => OnPropertyChanged(nameof(CanSubmit));
     partial void OnSelectedBlogChanged(string value) => OnPropertyChanged(nameof(CanSubmit));
 
     partial void OnShowScheduleChanged(bool value) => OnPropertyChanged(nameof(ShowSchedule));
@@ -187,7 +219,14 @@ public sealed partial class ComposerViewModel : ObservableObject
         };
         try
         {
-            var draft = new ComposerDraft { Text = Text, Tags = Tags };
+            var draft = new ComposerDraft
+            {
+                Text = Text,
+                Tags = Tags,
+                PostType = PostType,
+                LinkUrl = LinkUrl,
+                LinkTitle = LinkTitle,
+            };
             foreach (var image in Images) draft.Images.Add(image);
             await _client.CreatePostAsync(SelectedBlog, draft, state, publishOn);
             var label = state switch

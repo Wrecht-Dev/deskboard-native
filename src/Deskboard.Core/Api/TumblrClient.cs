@@ -369,10 +369,22 @@ public sealed partial class TumblrClient : IDisposable
     {
         var blocks = new List<Dictionary<string, object>>();
         if (!string.IsNullOrWhiteSpace(draft.Text))
-            blocks.Add(new Dictionary<string, object>
+        {
+            var block = new Dictionary<string, object>
             {
                 ["type"] = "text",
                 ["text"] = draft.Text.TrimEnd(),
+            };
+            if (draft.PostType == "quote") block["subtype"] = "quote";
+            blocks.Add(block);
+        }
+
+        if (draft.PostType == "link" && draft.LinkUrl.Trim().Length > 0)
+            blocks.Add(new Dictionary<string, object>
+            {
+                ["type"] = "link",
+                ["url"] = draft.LinkUrl.Trim(),
+                ["title"] = draft.LinkTitle.Trim().Length > 0 ? draft.LinkTitle.Trim() : draft.LinkUrl.Trim(),
             });
 
         foreach (var image in draft.Images.Where(i => i.Url.Length > 0))

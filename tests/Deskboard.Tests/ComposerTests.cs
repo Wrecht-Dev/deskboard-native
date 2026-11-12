@@ -33,6 +33,31 @@ public class ComposerTests
     }
 
     [Fact]
+    public void QuoteDraftUsesQuoteSubtype()
+    {
+        using var doc = JsonDocument.Parse(TumblrClient.BuildContentJson(
+            new ComposerDraft { Text = "words", PostType = "quote" }));
+        Assert.Equal("quote", doc.RootElement[0].GetProperty("subtype").GetString());
+    }
+
+    [Fact]
+    public void LinkDraftAddsALinkBlock()
+    {
+        using var doc = JsonDocument.Parse(TumblrClient.BuildContentJson(new ComposerDraft
+        {
+            Text = "look at this",
+            PostType = "link",
+            LinkUrl = "https://example.com",
+            LinkTitle = "Example",
+        }));
+        Assert.Equal(2, doc.RootElement.GetArrayLength());
+        var link = doc.RootElement[1];
+        Assert.Equal("link", link.GetProperty("type").GetString());
+        Assert.Equal("https://example.com", link.GetProperty("url").GetString());
+        Assert.Equal("Example", link.GetProperty("title").GetString());
+    }
+
+    [Fact]
     public void EmptyDraftProducesNoBlocks()
     {
         using var doc = JsonDocument.Parse(TumblrClient.BuildContentJson(new ComposerDraft()));
