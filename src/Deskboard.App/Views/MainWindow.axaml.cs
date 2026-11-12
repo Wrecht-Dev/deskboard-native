@@ -46,6 +46,33 @@ public partial class MainWindow : Window
         window.Show(this);
     }
 
+    private static PostItemViewModel? ItemFrom(object? sender)
+        => (sender as Control)?.DataContext as PostItemViewModel;
+
+    private void OnMutePost(object? sender, RoutedEventArgs e)
+    {
+        if (ItemFrom(sender) is { } item && DataContext is MainViewModel vm) _ = vm.MutePostAsync(item);
+    }
+
+    private async void OnBlockBlog(object? sender, RoutedEventArgs e)
+    {
+        if (ItemFrom(sender) is not { } item || DataContext is not MainViewModel vm) return;
+        if (await ConfirmWindow.AskAsync(this, $"Block {item.Post.BlogName}? Their posts will disappear from your feed.", "Block"))
+            await vm.BlockBlogAsync(item);
+    }
+
+    private void OnReportPost(object? sender, RoutedEventArgs e)
+    {
+        if (ItemFrom(sender) is { } item && DataContext is MainViewModel vm) _ = vm.ReportPostAsync(item);
+    }
+
+    private async void OnDeletePost(object? sender, RoutedEventArgs e)
+    {
+        if (ItemFrom(sender) is not { } item || DataContext is not MainViewModel vm) return;
+        if (await ConfirmWindow.AskAsync(this, "Delete this post permanently?", "Delete"))
+            await vm.DeletePostAsync(item);
+    }
+
     private void OnSearchKey(object? sender, Avalonia.Input.KeyEventArgs e)
     {
         if (e.Key != Avalonia.Input.Key.Enter) return;

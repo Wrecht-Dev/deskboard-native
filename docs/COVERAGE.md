@@ -27,7 +27,8 @@ Legend: ✅ working & verified live · 🟡 partial · ⏳ planned · ⛔ exclud
 | Messaging — send | 🟡 | wired + optimistic; not fired live (would message a real person) |
 | Messaging — requests | ⏳ | |
 | Inbox / drafts / queue | ⏳ | |
-| Drafts / queue / inbox APIs | ✅ | endpoints live (0 items on this account); pages pending |
+| Inbox / drafts / queue pages | ✅ | Library page with Inbox/Drafts/Queue tabs, empty states verified; account has 0 items |
+| Post menu (mute / block / report / delete) | 🟡 | wired with confirmations for block/delete; not fired live |
 
 ## 2. Post rendering
 

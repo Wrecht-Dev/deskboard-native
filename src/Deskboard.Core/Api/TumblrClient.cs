@@ -365,6 +365,46 @@ public sealed partial class TumblrClient : IDisposable
         => GetPageAsyncParam("/v2/user/inbox",
             new Dictionary<string, string?> { ["limit"] = limit.ToString(), ["offset"] = "0" }, ct);
 
+    // ----------------------------------------------------------- post actions --
+    public Task DeletePostAsync(Post post, CancellationToken ct = default)
+        => SendWriteAsync(HttpMethod.Post, $"/v2/blog/{Uri.EscapeDataString(post.BlogName)}/post/delete",
+            form: PostBody(post), ct: ct).AsVoid();
+
+    public Task MutePostAsync(Post post, bool mute, CancellationToken ct = default)
+    {
+        var method = mute ? HttpMethod.Post : HttpMethod.Delete;
+        return SendWriteAsync(method, $"/v2/blog/{Uri.EscapeDataString(post.BlogName)}/posts/{post.Id}/mute",
+            form: mute ? PostBody(post) : null, ct: ct).AsVoid();
+    }
+
+    public Task BlockBlogAsync(string blog, CancellationToken ct = default)
+        => SendWriteAsync(HttpMethod.Post, $"/v2/blog/{Uri.EscapeDataString(blog)}/blocks",
+            form: new Dictionary<string, string?>
+            {
+                ["blocked_tumblelog"] = blog,
+                ["force"] = "true",
+            }, ct: ct).AsVoid();
+
+    public Task UnblockBlogAsync(string blog, CancellationToken ct = default)
+        => SendWriteAsync(HttpMethod.Delete, $"/v2/blog/{Uri.EscapeDataString(blog)}/blocks",
+            form: new Dictionary<string, string?> { ["blocked_tumblelog"] = blog }, ct: ct).AsVoid();
+
+    public Task ReportPostAsync(Post post, string reason = "other", CancellationToken ct = default)
+        => SendWriteAsync(HttpMethod.Post, "/v2/report",
+            form: new Dictionary<string, string?>
+            {
+                ["post_id"] = post.Id,
+                ["blog_name"] = post.BlogName,
+                ["reason"] = reason,
+            }, ct: ct).AsVoid();
+
+    public Task PinPostAsync(Post post, bool pin, CancellationToken ct = default)
+    {
+        var method = pin ? HttpMethod.Post : HttpMethod.Delete;
+        return SendWriteAsync(method, $"/v2/blog/{Uri.EscapeDataString(post.BlogName)}/posts/{post.Id}/pin",
+            form: null, ct: ct).AsVoid();
+    }
+
     // -------------------------------------------------------------- messaging --
     /// <summary>Direct-message conversations.</summary>
     public async Task<ConversationsPage> GetConversationsAsync(string? url = null, CancellationToken ct = default)

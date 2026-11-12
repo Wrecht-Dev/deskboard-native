@@ -66,6 +66,14 @@
         </Grid>
       </Border>
 
+      <Border DockPanel.Dock="Top" Margin="34,0,34,8" IsVisible="{Binding IsLibraryPage}">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <Button Content="Inbox" Classes="chip" FontSize="13" Command="{Binding SetLibraryCommand}" CommandParameter="inbox" />
+          <Button Content="Drafts" Classes="chip" FontSize="13" Command="{Binding SetLibraryCommand}" CommandParameter="drafts" />
+          <Button Content="Queue" Classes="chip" FontSize="13" Command="{Binding SetLibraryCommand}" CommandParameter="queue" />
+        </StackPanel>
+      </Border>
+
       <Border DockPanel.Dock="Bottom" Padding="34,10" IsVisible="{Binding HasStatus}">
         <TextBlock Text="{Binding Status}" Classes="dim" FontSize="13" />
       </Border>
@@ -119,8 +127,20 @@
                               FontWeight="SemiBold" FontSize="15" Foreground="White" />
                       <TextBlock Text="{Binding Handle}" Classes="dim" FontSize="12" />
                     </StackPanel>
-                    <StackPanel Grid.Column="2" HorizontalAlignment="Right">
-                      <TextBlock Text="{Binding TimeAgo}" Classes="dim" FontSize="12" HorizontalAlignment="Right" />
+                    <StackPanel Grid.Column="2" HorizontalAlignment="Right" Orientation="Horizontal" Spacing="4">
+                      <TextBlock Text="{Binding TimeAgo}" Classes="dim" FontSize="12" VerticalAlignment="Center" />
+                      <Button Content="⋯" Background="Transparent" Padding="6,0" FontSize="16"
+                              Foreground="#9AA7B4" VerticalAlignment="Center">
+                        <Button.Flyout>
+                          <MenuFlyout>
+                            <MenuItem Header="Mute post" Click="OnMutePost" />
+                            <MenuItem Header="Block blog" Click="OnBlockBlog" />
+                            <MenuItem Header="Report post" Click="OnReportPost" />
+                            <Separator />
+                            <MenuItem Header="Delete post" Click="OnDeletePost" />
+                          </MenuFlyout>
+                        </Button.Flyout>
+                      </Button>
                     </StackPanel>
                   </Grid>
   

@@ -187,6 +187,7 @@ public sealed partial class MainViewModel : ObservableObject
         new("likes", "Likes"),
         new("notifications", "Activity"),
         new("messages", "Messages"),
+        new("library", "Library"),
     };
 
     [ObservableProperty] private FeedOption? _selectedFeed;
@@ -203,6 +204,9 @@ public sealed partial class MainViewModel : ObservableObject
     partial void OnIsNotificationsPageChanged(bool value) => OnPropertyChanged(nameof(ShowFeed));
     partial void OnIsMessagesPageChanged(bool value) => OnPropertyChanged(nameof(ShowFeed));
     [ObservableProperty] private bool _inThread;
+    [ObservableProperty] private bool _isLibraryPage;
+    [ObservableProperty] private string _libraryKind = "inbox";
+    [ObservableProperty] private string _libraryLabel = "Inbox";
     [ObservableProperty] private ConversationItemViewModel? _selectedConversation;
     [ObservableProperty] private string _threadTitle = "";
     [ObservableProperty] private string _composerText = "";
@@ -253,6 +257,7 @@ public sealed partial class MainViewModel : ObservableObject
         CanGoBack = false;
         IsBlogPage = false;
         IsMessagesPage = false;
+        IsLibraryPage = false;
         InThread = false;
         if (value.Key == "notifications")
         {
@@ -261,8 +266,17 @@ public sealed partial class MainViewModel : ObservableObject
             _ = LoadNotificationsAsync();
             return;
         }
+        if (value.Key == "library")
+        {
+            IsNotificationsPage = false;
+            IsMessagesPage = false;
+            IsLibraryPage = true;
+            _ = LoadLibraryAsync("inbox");
+            return;
+        }
         if (value.Key == "messages")
         {
+            IsLibraryPage = false;
             IsNotificationsPage = false;
             IsMessagesPage = true;
             InThread = false;
@@ -563,6 +577,97 @@ public sealed partial class MainViewModel : ObservableObject
         SelectedConversation = null;
         ThreadMessages.Clear();
         _ = LoadConversationsAsync();
+    }
+
+    [RelayCommand]
+    public async Task SetLibraryAsync(string kind) => await LoadLibraryAsync(kind);
+
+    public async Task LoadLibraryAsync(string kind)
+    {
+        if (IsLoading) return;
+        LibraryKind = kind;
+        LibraryLabel = kind switch { "drafts" => "Drafts", "queue" => "Queue", _ => "Inbox" };
+        Headline = LibraryLabel;
+        IsLoading = true;
+        try
+        {
+            var page = kind switch
+            {
+                "drafts" => await _client.GetDraftsAsync(PrimaryBlog),
+                "queue" => await _client.GetQueueAsync(PrimaryBlog),
+                _ => await _client.GetInboxAsync(),
+            };
+            Posts.Clear();
+            foreach (var post in page.Items) Posts.Add(new PostItemViewModel(post, this));
+            _next = page.NextUrl;
+            Subhead = $"{LibraryLabel} · {Posts.Count} posts";
+            HasStatus = Posts.Count == 0;
+            Status = Posts.Count == 0 ? $"Nothing in {LibraryLabel.ToLowerInvariant()}." : "";
+            foreach (var item in Posts) _ = item.LoadImagesAsync();
+        }
+        catch (Exception ex)
+        {
+            HasStatus = true;
+            Status = ex is TumblrException ? ex.Message : $"Couldn't load {LibraryLabel.ToLowerInvariant()}: {ex.Message}";
+        }
+        finally { IsLoading = false; }
+    }
+
+    public async Task DeletePostAsync(PostItemViewModel item)
+    {
+        try
+        {
+            await _client.DeletePostAsync(item.Post);
+            Posts.Remove(item);
+            Status = "Post deleted."; HasStatus = true;
+        }
+        catch (Exception ex)
+        {
+            Status = ex is TumblrException ? ex.Message : $"Couldn't delete: {ex.Message}";
+            HasStatus = true;
+        }
+    }
+
+    public async Task MutePostAsync(PostItemViewModel item, bool mute = true)
+    {
+        try
+        {
+            await _client.MutePostAsync(item.Post, mute);
+            Status = mute ? "Post muted." : "Post unmuted."; HasStatus = true;
+        }
+        catch (Exception ex)
+        {
+            Status = ex is TumblrException ? ex.Message : $"Couldn't mute: {ex.Message}";
+            HasStatus = true;
+        }
+    }
+
+    public async Task BlockBlogAsync(PostItemViewModel item)
+    {
+        try
+        {
+            await _client.BlockBlogAsync(item.Post.BlogName);
+            Status = $"Blocked {item.Post.BlogName}."; HasStatus = true;
+        }
+        catch (Exception ex)
+        {
+            Status = ex is TumblrException ? ex.Message : $"Couldn't block: {ex.Message}";
+            HasStatus = true;
+        }
+    }
+
+    public async Task ReportPostAsync(PostItemViewModel item)
+    {
+        try
+        {
+            await _client.ReportPostAsync(item.Post);
+            Status = "Report sent."; HasStatus = true;
+        }
+        catch (Exception ex)
+        {
+            Status = ex is TumblrException ? ex.Message : $"Couldn't report: {ex.Message}";
+            HasStatus = true;
+        }
     }
 
     public async Task ToggleLikeAsync(PostItemViewModel item)
