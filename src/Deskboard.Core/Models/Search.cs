@@ -46,7 +46,7 @@ public sealed class Notification
         _ => Type.Replace('_', ' '),
     };
 
-    public bool NeedsFollowBack => FollowingYou && !Followed;
+    public bool NeedsFollowBack => Type is "follow" or "follower" && FollowingYou && !Followed;
 }
 
 public sealed class NotificationsPage
