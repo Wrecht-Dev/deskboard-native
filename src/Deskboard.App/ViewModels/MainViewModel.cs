@@ -176,7 +176,7 @@ public sealed partial class PostItemViewModel : ObservableObject
 
 public sealed partial class MainViewModel : ObservableObject
 {
-    private readonly TumblrClient _client = new();
+    private readonly TumblrClient _client;
     private string? _next;
     private string? _notificationsNext;
     private string _tagSort = "latest";
@@ -191,6 +191,7 @@ public sealed partial class MainViewModel : ObservableObject
     public ObservableCollection<string> SearchTags { get; } = new();
     public ObservableCollection<PinnedTab> PinnedTabs { get; } = new();
     public ObservableCollection<Bookmark> Bookmarks { get; } = new();
+    public ObservableCollection<string> TrendingTags { get; } = new();
     public FeedFilter Filters { get; private set; } = new();
     public ObservableCollection<ConversationItemViewModel> Conversations { get; } = new();
     public ObservableCollection<MessageItemViewModel> ThreadMessages { get; } = new();
@@ -248,6 +249,7 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _hasPinnedTabs;
     [ObservableProperty] private bool _hasBookmarks;
     [ObservableProperty] private bool _hasUpdate;
+    [ObservableProperty] private bool _isQueueView;
     [ObservableProperty] private string _updateLabel = "";
     [ObservableProperty] private bool _isBookmarksPage;
     [ObservableProperty] private int _hiddenCount;
@@ -264,8 +266,9 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly bool _demoMode;
     public bool DemoMode => _demoMode;
 
-    public MainViewModel()
+    public MainViewModel(TumblrClient? client = null)
     {
+        _client = client ?? new TumblrClient();
         _demoMode = Environment.GetEnvironmentVariable("DESKBOARD_DEMO") == "1";
         LoadPinnedTabs();
         Filters = FeedFilter.Load();
@@ -367,6 +370,7 @@ public sealed partial class MainViewModel : ObservableObject
             }
         }
         _ = CheckForUpdatesAsync();
+        _ = LoadTrendingAsync();
         await LoadFeedAsync();
     }
 
@@ -951,6 +955,55 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     public async Task SetLibraryAsync(string kind) => await LoadLibraryAsync(kind);
 
+    public async Task LoadTrendingAsync()
+    {
+        try
+        {
+            var tags = await _client.GetTrendingTagsAsync();
+            TrendingTags.Clear();
+            foreach (var tag in tags.Take(12)) TrendingTags.Add(tag);
+        }
+        catch (Exception) { }
+    }
+
+    [RelayCommand]
+    public Task PauseQueueAsync() => SetQueuePausedAsync(true);
+
+    [RelayCommand]
+    public Task ResumeQueueAsync() => SetQueuePausedAsync(false);
+
+    private async Task SetQueuePausedAsync(bool paused)
+    {
+        try
+        {
+            await _client.SetQueuePausedAsync(PrimaryBlog, paused);
+            Status = paused ? "Queue paused." : "Queue resumed.";
+            HasStatus = true;
+        }
+        catch (Exception ex)
+        {
+            Status = ex is TumblrException ? ex.Message : $"Couldn't update the queue: {ex.Message}";
+            HasStatus = true;
+        }
+    }
+
+    [RelayCommand]
+    public async Task ShuffleQueueAsync()
+    {
+        try
+        {
+            await _client.ShuffleQueueAsync(PrimaryBlog);
+            Status = "Queue shuffled.";
+            HasStatus = true;
+            await LoadLibraryAsync("queue");
+        }
+        catch (Exception ex)
+        {
+            Status = ex is TumblrException ? ex.Message : $"Couldn't shuffle: {ex.Message}";
+            HasStatus = true;
+        }
+    }
+
     public async Task LoadLibraryAsync(string kind)
     {
         if (IsLoading) return;
@@ -969,7 +1022,8 @@ public sealed partial class MainViewModel : ObservableObject
             Posts.Clear();
             foreach (var post in page.Items) Posts.Add(new PostItemViewModel(post, this));
             _next = page.NextUrl;
-            Subhead = $"{LibraryLabel} · {Posts.Count} posts";
+            IsQueueView = kind == "queue";
+        Subhead = $"{LibraryLabel} · {Posts.Count} posts";
             HasStatus = Posts.Count == 0;
             Status = Posts.Count == 0 ? $"Nothing in {LibraryLabel.ToLowerInvariant()}." : "";
             foreach (var item in Posts) _ = item.LoadImagesAsync();

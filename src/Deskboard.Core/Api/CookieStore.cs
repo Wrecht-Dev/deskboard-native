@@ -19,8 +19,9 @@ public static class CookieStore
         {
             try
             {
+                // An explicit override wins even when empty ("{}" = signed out).
                 var parsed = JsonSerializer.Deserialize<Dictionary<string, string>>(env);
-                if (parsed is { Count: > 0 }) return parsed;
+                if (parsed is not null) return parsed;
             }
             catch (JsonException) { /* ignore malformed override */ }
         }

@@ -167,6 +167,12 @@ public partial class MainWindow : Window
         if ((sender as Control)?.DataContext is Services.Bookmark bookmark) vm.OpenBookmark(bookmark);
     }
 
+    private void OnTrendingTag(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainViewModel vm) return;
+        if ((sender as Control)?.DataContext is string tag) _ = vm.OpenTagAsync(tag);
+    }
+
     private void OnSearchKey(object? sender, Avalonia.Input.KeyEventArgs e)
     {
         if (e.Key != Avalonia.Input.Key.Enter) return;

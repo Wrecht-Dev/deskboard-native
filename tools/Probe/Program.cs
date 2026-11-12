@@ -1,3 +1,5 @@
-using Deskboard.App.Services;
-var info = await UpdateChecker.CheckAsync(AppInfo.Version);
-Console.WriteLine($"current={AppInfo.Version} latest={info?.LatestTag} newer={info is not null && AppInfo.IsNewer(info.LatestTag, AppInfo.Version)}");
+using Deskboard.Core.Api;
+var client = new TumblrClient();
+await client.EnsureTokenAsync();
+var tags = await client.GetTrendingTagsAsync();
+Console.WriteLine($"trending: {tags.Count} tags -> {string.Join(", ", tags.Take(6))}");

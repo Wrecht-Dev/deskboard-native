@@ -40,6 +40,9 @@ public sealed partial class TumblrClient : IDisposable
 
     public bool HasSession => _cookies.Count > 0;
 
+    /// <summary>When false, a 401 never silently imports the browser session.</summary>
+    public bool AutoRefreshSession { get; set; } = true;
+
     public TumblrClient(string? configDir = null, string? dataDir = null, IDictionary<string, string>? cookies = null)
     {
         _configDir = configDir ?? Paths.ConfigDir;
@@ -132,7 +135,7 @@ public sealed partial class TumblrClient : IDisposable
     /// <summary>Re-read the session from the user's Firefox profile (cookies rotate).</summary>
     public bool RefreshSessionFromBrowser()
     {
-        if (_sessionRefreshed) return false;
+        if (!AutoRefreshSession || _sessionRefreshed) return false;
         _sessionRefreshed = true;
         var fresh = FirefoxCookies.ReadTumblrCookies();
         if (fresh.Count == 0) return false;
@@ -472,6 +475,53 @@ public sealed partial class TumblrClient : IDisposable
     public Task<Paged<Post>> GetInboxAsync(int limit = 20, CancellationToken ct = default)
         => GetPageAsyncParam("/v2/user/inbox",
             new Dictionary<string, string?> { ["limit"] = limit.ToString(), ["offset"] = "0" }, ct);
+
+    // ---------------------------------------------------------------- trends --
+    /// <summary>Trending topics, as tag names in the order Tumblr surfaces them.</summary>
+    public async Task<List<string>> GetTrendingTagsAsync(CancellationToken ct = default)
+    {
+        using var doc = await SendAsync(HttpMethod.Get, "/v2/explore/trending/tags", ct: ct).ConfigureAwait(false);
+        var tags = new List<string>();
+        var root = doc.RootElement.TryGetProperty("response", out var r) ? r : doc.RootElement;
+        if (root.TryGetProperty("timeline", out var timeline) &&
+            timeline.TryGetProperty("elements", out var elements) &&
+            elements.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var element in elements.EnumerateArray())
+            {
+                if (element.TryGetProperty("resources", out var resources) &&
+                    resources.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var resource in resources.EnumerateArray())
+                    {
+                        var tag = resource.Str("tag");
+                        if (tag.Length > 0 && !tags.Contains(tag)) tags.Add(tag);
+                    }
+                }
+                if (element.Str("topicTitle") is { Length: > 0 } title && !tags.Contains(title))
+                    tags.Add(title);
+            }
+        }
+        return tags;
+    }
+
+    // ----------------------------------------------------------------- queue --
+    public Task SetQueuePausedAsync(string blog, bool paused, CancellationToken ct = default)
+        => SendWriteAsync(HttpMethod.Post, $"/v2/blog/{Uri.EscapeDataString(blog)}/posts/queue/state",
+            form: new Dictionary<string, string?> { ["paused"] = paused ? "true" : "false" }, ct: ct).AsVoid();
+
+    public Task ShuffleQueueAsync(string blog, CancellationToken ct = default)
+        => SendWriteAsync(HttpMethod.Post, $"/v2/blog/{Uri.EscapeDataString(blog)}/posts/queue/shuffle",
+            ct: ct).AsVoid();
+
+    public Task ReorderQueueAsync(string blog, string postId, string insertAfter = "",
+        CancellationToken ct = default)
+    {
+        var form = new Dictionary<string, string?> { ["post_id"] = postId };
+        if (insertAfter.Length > 0) form["insert_after"] = insertAfter;
+        return SendWriteAsync(HttpMethod.Post, $"/v2/blog/{Uri.EscapeDataString(blog)}/posts/queue/reorder",
+            form: form, ct: ct).AsVoid();
+    }
 
     // ----------------------------------------------------------- post actions --
     public Task DeletePostAsync(Post post, CancellationToken ct = default)

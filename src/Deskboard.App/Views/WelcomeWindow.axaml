@@ -1,0 +1,27 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Deskboard.App.Views.WelcomeWindow"
+        Title="Welcome to Deskboard" Width="520" Height="520"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource PageBrush}">
+  <StackPanel Margin="28" Spacing="14">
+    <TextBlock Text="tumblr" FontSize="28" FontWeight="Black" />
+    <TextBlock Text="A native Tumblr client" Classes="heading" />
+    <TextBlock Text="No webview, no browser tab — a real desktop app for Linux, Windows and macOS."
+               Classes="dim" FontSize="13" TextWrapping="Wrap" />
+    <Border Classes="card" Padding="16">
+      <StackPanel Spacing="8">
+        <TextBlock Text="What you can do" FontWeight="Bold" FontSize="14" />
+        <TextBlock Text="• Home, Following, Explore, Likes, blogs and tags with Latest/Top" Classes="dim" FontSize="12" TextWrapping="Wrap" />
+        <TextBlock Text="• Pin your own tabs — a tag, a search, or all followed tags at once" Classes="dim" FontSize="12" TextWrapping="Wrap" />
+        <TextBlock Text="• Post, reblog, reply, ask and message from a native composer" Classes="dim" FontSize="12" TextWrapping="Wrap" />
+        <TextBlock Text="• Keyword filters and offline bookmarks the website doesn't have" Classes="dim" FontSize="12" TextWrapping="Wrap" />
+      </StackPanel>
+    </Border>
+    <Button Classes="accent" Content="Sign in with email" Click="OnSignIn" HorizontalAlignment="Stretch" />
+    <Button Content="I'll use my browser session" Click="OnBrowserSession" HorizontalAlignment="Stretch" />
+    <Button Content="Just browse for now" Click="OnBrowse" HorizontalAlignment="Stretch" />
+    <TextBlock Text="Credentials go only to tumblr.com and are never stored."
+               Classes="dim" FontSize="11" TextWrapping="Wrap" />
+  </StackPanel>
+</Window>

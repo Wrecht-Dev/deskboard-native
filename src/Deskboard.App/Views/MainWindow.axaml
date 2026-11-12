@@ -101,6 +101,14 @@
         </Grid>
       </Border>
 
+      <Border DockPanel.Dock="Top" Margin="34,0,34,8" IsVisible="{Binding IsQueueView}">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <Button Content="Pause queue" FontSize="12" Command="{Binding PauseQueueCommand}" />
+          <Button Content="Resume queue" FontSize="12" Command="{Binding ResumeQueueCommand}" />
+          <Button Content="Shuffle" FontSize="12" Command="{Binding ShuffleQueueCommand}" />
+        </StackPanel>
+      </Border>
+
       <Border DockPanel.Dock="Top" Margin="34,0,34,8" IsVisible="{Binding HasHiddenPosts}">
         <Grid ColumnDefinitions="*,Auto">
           <TextBlock Text="{Binding FilterNote}" Classes="dim" FontSize="12" VerticalAlignment="Center" />
@@ -382,11 +390,18 @@
             </Grid>
           </StackPanel>
         </Border>
+        <TextBlock Text="Trending now" Classes="dim" FontSize="11" />
         <WrapPanel Orientation="Horizontal">
-          <Button Classes="chip" Content="#art" Margin="0,0,6,6" />
-          <Button Classes="chip" Content="#photography" Margin="0,0,6,6" />
-          <Button Classes="chip" Content="#design" Margin="0,0,6,6" />
-          <Button Classes="chip" Content="#typography" Margin="0,0,6,6" />
+          <ItemsControl ItemsSource="{Binding TrendingTags}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Button Classes="chip" Content="{Binding}" Margin="0,0,6,6" Click="OnTrendingTag" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
         </WrapPanel>
         <Button Content="Load more" Command="{Binding LoadMoreCommand}" IsVisible="{Binding HasMore}"
                 HorizontalAlignment="Stretch" />
