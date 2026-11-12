@@ -27,6 +27,14 @@ public partial class SettingsWindow : Window
         // the dark segment is hidden when light is active; keep the label pair stable
     }
 
+    private async void OnSignIn(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not SettingsViewModel vm) return;
+        var login = new LoginViewModel(vm.Client);
+        var window = new LoginWindow { DataContext = login };
+        await window.ShowDialog(this);
+    }
+
     private void OnDark(object? sender, RoutedEventArgs e)
     {
         if (DataContext is SettingsViewModel vm) vm.SetThemeCommand.Execute("dark");

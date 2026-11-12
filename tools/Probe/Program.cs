@@ -1,6 +1,6 @@
 using Deskboard.Core.Api;
 var client = new TumblrClient();
-await client.EnsureTokenAsync();
-var conv = await client.GetConversationsAsync();
-var req = await client.GetConversationsAsync(requests: true);
-Console.WriteLine($"conversations={conv.Conversations.Count} requests={req.Conversations.Count}");
+var result = await client.LoginAsync("deskboard-test@example.invalid", "not-a-real-password-123");
+Console.WriteLine($"status={result.Status} cookies={result.CookieCount} message={result.Message}");
+var bad = SetCookieParser.Parse(new[] { "sid=abc123; Path=/; Domain=.tumblr.com; Secure", "tmgioct=xyz; Path=/", "badcookie" });
+Console.WriteLine($"parsed: {string.Join(",", bad.Select(kv => kv.Key + "=" + kv.Value))}");

@@ -231,6 +231,7 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _hasMore;
 
     private readonly bool _demoMode;
+    public bool DemoMode => _demoMode;
 
     public MainViewModel()
     {

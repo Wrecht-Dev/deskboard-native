@@ -12,7 +12,7 @@ PoC. It is the specification the rewrite follows.
 | **Public web token** | The site serves a bearer token inside its HTML bootstrap (`API_TOKEN`). It authorises what a logged-out visitor can see. Deskboard fetches it at first launch and caches it locally. |
 | **Session** | The user's own browser cookies (`sid`, `tmgioct`, `pfu`, `logged_in`, …) sent as a `Cookie` header. Imported from Firefox/Chromium or a `cookies.txt`. |
 | **Writes** | Require the per-session **CSRF token** from the dashboard bootstrap: `"csrfToken":"<value>"` (sometimes JSON-escaped). Sent as `X-CSRF`. A stale/missing token yields `401 code 1022`. |
-| **Login** | `POST /v2/oauth2/token` (`grant_type=password`) — deliberately not used by Deskboard; sign-in is via browser session import. |
+| **Credential login** | `POST /v2/oauth2/token` with `Authorization: Bearer <public web token>` and form `grant_type=password&username=&password=[&tfa_token=][&captcha_token=][&blackbox_session_id=]`. Success returns the session as `Set-Cookie` headers; failures distinguish bad credentials, 2FA (`tfa_token` needed), captcha and rate limiting. |
 
 Every request sends: `Authorization: Bearer <public token>`, `Cookie: …`,
 `Accept: application/json;format=camelcase`, `X-Version: 1`,

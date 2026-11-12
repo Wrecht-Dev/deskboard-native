@@ -217,6 +217,94 @@ public sealed partial class TumblrClient : IDisposable
         return doc.RootElement.Clone();
     }
 
+    // ------------------------------------------------------------------ login --
+    /// <summary>
+    /// Sign in with an email/username and password.
+    ///
+    /// The website authenticates against /v2/oauth2/token using the same public
+    /// bearer token that authorises anonymous reads. On success Tumblr sets the
+    /// session cookies we then use for every other call. Two-factor and captcha
+    /// challenges are reported distinctly so the UI can prompt for the next step.
+    /// </summary>
+    public async Task<LoginResult> LoginAsync(string username, string password,
+        string? tfaToken = null, string? captchaToken = null, string? blackboxSessionId = null,
+        CancellationToken ct = default)
+    {
+        await EnsureTokenAsync(ct).ConfigureAwait(false);
+        if (!HasToken) return new LoginResult { Status = LoginStatus.Failed, Message = "Couldn't reach Tumblr." };
+
+        var form = new Dictionary<string, string>
+        {
+            ["grant_type"] = "password",
+            ["username"] = username.Trim(),
+            ["password"] = password,
+        };
+        if (!string.IsNullOrWhiteSpace(tfaToken)) form["tfa_token"] = tfaToken;
+        if (!string.IsNullOrWhiteSpace(captchaToken)) form["captcha_token"] = captchaToken;
+        if (!string.IsNullOrWhiteSpace(blackboxSessionId)) form["blackbox_session_id"] = blackboxSessionId;
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, ApiBase + "/v2/oauth2/token")
+        {
+            Content = new FormUrlEncodedContent(form),
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _token);
+        request.Headers.TryAddWithoutValidation("Accept", "application/json;format=camelcase");
+        request.Headers.TryAddWithoutValidation("User-Agent",
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36");
+
+        using var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
+        var body = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+
+        if (response.IsSuccessStatusCode)
+        {
+            // The session arrives as Set-Cookie headers; the JSON body alone is not
+            // enough to use the website API.
+            var fresh = response.Headers.TryGetValues("Set-Cookie", out var setCookies)
+                ? SetCookieParser.Parse(setCookies)
+                : new Dictionary<string, string>();
+            if (fresh.Count > 0)
+            {
+                foreach (var (name, value) in fresh) _cookies[name] = value;
+                CookieStore.SaveStore(_cookies, _dataDir);
+            }
+            return new LoginResult
+            {
+                Status = LoginStatus.Success,
+                Message = fresh.Count > 0 ? "Signed in." : "Signed in, but no session cookie was returned.",
+                CookieCount = fresh.Count,
+            };
+        }
+
+        var (status, message) = ClassifyLoginError((int)response.StatusCode, body);
+        return new LoginResult { Status = status, Message = message };
+    }
+
+    private static (LoginStatus Status, string Message) ClassifyLoginError(int httpStatus, string body)
+    {
+        string error = "", description = "";
+        try
+        {
+            using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(body) ? "{}" : body);
+            var root = doc.RootElement;
+            if (root.TryGetProperty("error", out var e)) error = e.GetString() ?? "";
+            if (root.TryGetProperty("errorDescription", out var d)) description = d.GetString() ?? "";
+            else if (root.TryGetProperty("error_description", out var d2)) description = d2.GetString() ?? "";
+        }
+        catch (JsonException) { }
+
+        var probe = (error + " " + description).ToLowerInvariant();
+        if (httpStatus == 429 || probe.Contains("rate limit"))
+            return (LoginStatus.RateLimited, "Too many attempts — wait a minute and try again.");
+        if (probe.Contains("captcha"))
+            return (LoginStatus.NeedsCaptcha, "Tumblr wants a captcha for this attempt. Sign in through your browser once, then use “Use browser session”.");
+        if (probe.Contains("2fa") || probe.Contains("two-factor") || probe.Contains("two factor") ||
+            probe.Contains("tfa") || probe.Contains("verification code"))
+            return (LoginStatus.NeedsTwoFactor, "Enter the two-factor code from your authenticator.");
+
+        var friendly = string.IsNullOrWhiteSpace(description) ? "Tumblr didn't accept that login." : description;
+        return (LoginStatus.BadCredentials, friendly);
+    }
+
     // ---------------------------------------------------------------- search --
     public Task<Paged<Post>> SearchPostsAsync(string query, int limit = 20, CancellationToken ct = default)
         => GetPageAsyncParam("/v2/timeline/search",

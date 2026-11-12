@@ -13,6 +13,8 @@ Legend: ✅ working & verified live · 🟡 partial · ⏳ planned · ⛔ exclud
 | Likes | ✅ | `{likedPosts, likedCount}` |
 | Virtualised feed + infinite scroll | ✅ | `ListBox` + scroll-threshold `LoadMore` |
 | Session auto-refresh (rotated cookies) | ✅ | re-reads Firefox `cookies.sqlite`, persists `0600` |
+| Credential sign-in (email/password) | ✅ | real login endpoint via public bearer; 2FA/captcha/rate-limit classified; password never stored |
+| Browser-session fallback | ✅ | one-click import in the same dialog |
 | Public token discovery + cache | ✅ | no credentials in repo |
 | Dark theme | ✅ | sampled from live site |
 | Light theme | ✅ | theme dictionaries; verified by screenshot (white rail/cards, dark text) |

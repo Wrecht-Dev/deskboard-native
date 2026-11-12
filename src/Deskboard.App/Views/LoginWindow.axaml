@@ -1,0 +1,31 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Deskboard.App.ViewModels"
+        x:Class="Deskboard.App.Views.LoginWindow"
+        x:DataType="vm:LoginViewModel"
+        Title="Sign in — Deskboard" Width="480" Height="520"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource PageBrush}">
+  <StackPanel Margin="26" Spacing="12">
+    <TextBlock Text="tumblr" FontSize="26" FontWeight="Black" />
+    <TextBlock Text="Sign in to your Tumblr account" Classes="heading" />
+    <TextBlock Text="Your credentials go straight to tumblr.com. Deskboard never stores your password and never sends it anywhere else."
+               Classes="dim" FontSize="12" TextWrapping="Wrap" />
+
+    <TextBox Text="{Binding Email}" Watermark="Email or username" />
+    <TextBox Text="{Binding Password}" Watermark="Password" PasswordChar="•" />
+    <TextBox Text="{Binding TwoFactorCode}" Watermark="Two-factor code"
+             IsVisible="{Binding NeedsTwoFactor}" />
+
+    <Button Classes="accent" Content="Sign in" Command="{Binding SignInCommand}"
+            IsEnabled="{Binding CanSubmit}" HorizontalAlignment="Stretch" />
+    <TextBlock Text="{Binding Status}" Foreground="#FF9A9A" FontSize="12"
+               IsVisible="{Binding HasStatus}" TextWrapping="Wrap" />
+
+    <Separator Margin="0,8" />
+    <TextBlock Text="Or reuse the session from your browser" Classes="dim" FontSize="12" />
+    <Button Content="Use browser session" Command="{Binding UseBrowserSessionCommand}"
+            HorizontalAlignment="Stretch" />
+    <Button Content="Cancel" Command="{Binding CancelCommand}" HorizontalAlignment="Stretch" />
+  </StackPanel>
+</Window>

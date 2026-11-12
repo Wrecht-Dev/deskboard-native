@@ -10,6 +10,7 @@ namespace Deskboard.App.ViewModels;
 public sealed partial class SettingsViewModel : ObservableObject
 {
     private readonly TumblrClient _client;
+    public TumblrClient Client => _client;
 
     public ObservableCollection<string> Blogs { get; } = new();
 
