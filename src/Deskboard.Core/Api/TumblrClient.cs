@@ -208,6 +208,15 @@ public sealed partial class TumblrClient : IDisposable
         }
     }
 
+    /// <summary>Low-level GET returning the decoded JSON, for schemas the typed
+    /// models don't cover yet (and for diagnostics).</summary>
+    public async Task<JsonElement> RawGetAsync(string path, IDictionary<string, string?>? query = null,
+        CancellationToken ct = default)
+    {
+        using var doc = await SendAsync(HttpMethod.Get, path, query, ct: ct).ConfigureAwait(false);
+        return doc.RootElement.Clone();
+    }
+
     // ---------------------------------------------------------------- search --
     public Task<Paged<Post>> SearchPostsAsync(string query, int limit = 20, CancellationToken ct = default)
         => GetPageAsyncParam("/v2/timeline/search",
@@ -244,6 +253,129 @@ public sealed partial class TumblrClient : IDisposable
                 });
 
         return result;
+    }
+
+    // -------------------------------------------------------------- messaging --
+    /// <summary>Direct-message conversations.</summary>
+    public async Task<ConversationsPage> GetConversationsAsync(string? url = null, CancellationToken ct = default)
+    {
+        var path = url ?? "/v2/conversations?limit=20";
+        using var doc = await SendAsync(HttpMethod.Get, path, ct: ct).ConfigureAwait(false);
+        return ParseConversations(doc.RootElement);
+    }
+
+    private static ConversationsPage ParseConversations(JsonElement root)
+    {
+        var response = root.TryGetProperty("response", out var r) ? r : root;
+        var conversations = new List<Conversation>();
+        if (response.ValueKind == JsonValueKind.Object &&
+            response.TryGetProperty("conversations", out var arr) && arr.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var c in arr.EnumerateArray())
+            {
+                if (c.ValueKind != JsonValueKind.Object) continue;
+
+                var names = new List<string>();
+                var keyMap = new Dictionary<string, string>();
+                if (c.TryGetProperty("participants", out var ps) && ps.ValueKind == JsonValueKind.Array)
+                    foreach (var p in ps.EnumerateArray())
+                    {
+                        if (p.ValueKind != JsonValueKind.Object) continue;
+                        var name = p.Str("name");
+                        if (name.Length == 0) continue;
+                        names.Add(name);
+                        var key = p.Str("key");
+                        if (key.Length > 0) keyMap[key] = name;
+                    }
+
+                // The last message preview lives in `messages` (an array).
+                var lastText = "";
+                var updated = c.Num("lastModifiedTs");
+                if (c.TryGetProperty("messages", out var msgs) && msgs.ValueKind == JsonValueKind.Array &&
+                    msgs.GetArrayLength() > 0)
+                {
+                    var last = msgs[msgs.GetArrayLength() - 1];
+                    lastText = last.Str("message");
+                    var ts = last.Num("ts");
+                    if (ts > updated) updated = ts;
+                }
+
+                conversations.Add(new Conversation
+                {
+                    Id = c.Str("id") is { Length: > 0 } id ? id : c.Str("canonicalId"),
+                    Participants = names,
+                    ParticipantNames = keyMap,
+                    LastMessage = lastText,
+                    Updated = updated,
+                    Unread = (int)c.Num("unreadMessagesCount"),
+                    CanSend = c.Bool("canSend", true),
+                });
+            }
+        }
+
+        string? next = null;
+        if (response.ValueKind == JsonValueKind.Object && response.TryGetProperty("links", out var links) &&
+            links.ValueKind == JsonValueKind.Object && links.TryGetProperty("next", out var n) &&
+            n.ValueKind == JsonValueKind.Object && n.TryGetProperty("href", out var href))
+            next = href.GetString();
+
+        return new ConversationsPage { Conversations = conversations, NextUrl = next };
+    }
+
+    /// <summary>Messages in one conversation, oldest first.</summary>
+    public async Task<List<Message>> GetMessagesAsync(string conversationId, CancellationToken ct = default)
+    {
+        using var doc = await SendAsync(HttpMethod.Get, "/v2/conversations/messages",
+            new Dictionary<string, string?> { ["conversation_id"] = conversationId }, ct: ct).ConfigureAwait(false);
+        return ParseMessages(doc.RootElement);
+    }
+
+    private static List<Message> ParseMessages(JsonElement root)
+    {
+        var response = root.TryGetProperty("response", out var r) ? r : root;
+        // The route nests as {messages: {data: [...]}}
+        JsonElement arr = default;
+        var found = false;
+        if (response.ValueKind == JsonValueKind.Object && response.TryGetProperty("messages", out var messages))
+        {
+            if (messages.ValueKind == JsonValueKind.Array) { arr = messages; found = true; }
+            else if (messages.ValueKind == JsonValueKind.Object &&
+                     messages.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Array)
+            { arr = data; found = true; }
+        }
+        if (!found) return new List<Message>();
+
+        var list = new List<Message>();
+        foreach (var m in arr.EnumerateArray())
+        {
+            if (m.ValueKind != JsonValueKind.Object) continue;
+            list.Add(new Message
+            {
+                Id = m.Str("id"),
+                Participant = m.Str("participant"),
+                Text = m.Str("message") is { Length: > 0 } text ? text : m.Str("text"),
+                Timestamp = m.Num("ts") is var ts && ts > 0 ? ts : m.Num("timestamp") * 1000,
+                ParticipantKey = m.Str("participant"),
+                Type = m.Str("type") is { Length: > 0 } t ? t : "text",
+                IsMine = m.Bool("isMine") || m.Bool("mine"),
+            });
+        }
+        list.Sort((a, b) => a.Timestamp.CompareTo(b.Timestamp));
+        return list;
+    }
+
+    /// <summary>Send a direct message to a participant (new or existing conversation).</summary>
+    public Task SendMessageAsync(string participant, string text, string? conversationId = null,
+        CancellationToken ct = default)
+    {
+        var form = new Dictionary<string, string?>
+        {
+            ["message"] = text,
+            ["participants"] = participant,
+            ["type"] = "TEXT",
+        };
+        if (!string.IsNullOrEmpty(conversationId)) form["conversation_id"] = conversationId;
+        return SendWriteAsync(HttpMethod.Post, "/v2/conversations/messages", form: form, ct: ct).AsVoid();
     }
 
     // ----------------------------------------------------------- notifications --

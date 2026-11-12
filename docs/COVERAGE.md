@@ -22,7 +22,11 @@ Legend: ✅ working & verified live · 🟡 partial · ⏳ planned · ⛔ exclud
 | Search (posts / blogs / communities) | 🟡 | API verified live (5 posts, 5 blogs, 5 communities); UI wired (search box + results); keyboard input not injectable under headless Xvfb, so UI unverified |
 | Notifications / Activity | 🟡 | API verified live (48, paginated); list UI with follow-back; no screenshot for privacy |
 | Notifications | ⏳ | |
-| Messaging / conversations / inbox | ⏳ | |
+| Messaging — conversations list | ✅ | 20 conversations live; unread badges, dates |
+| Messaging — thread | ✅ | authorship aligned bubbles, times, composer, optimistic send |
+| Messaging — send | 🟡 | wired + optimistic; not fired live (would message a real person) |
+| Messaging — requests | ⏳ | |
+| Inbox / drafts / queue | ⏳ | |
 | Drafts / queue | ⏳ | |
 
 ## 2. Post rendering
@@ -66,7 +70,7 @@ validation.
 | Check | Result |
 |---|---|
 | Build (`dotnet build`) | ✅ 0 errors |
-| Tests (`dotnet test`) | ✅ 14/14 |
+| Tests (`dotnet test`) | ✅ 24/24 |
 | Live feed | ✅ 11–12 posts, avatars + text render |
 | Live tag Top ordering | ✅ note-count sorted |
 | Live likes | ✅ count returned |

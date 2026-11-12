@@ -173,7 +173,10 @@ public sealed partial class MainViewModel : ObservableObject
     public ObservableCollection<BlogRowViewModel> SearchBlogs { get; } = new();
     public ObservableCollection<NotificationItemViewModel> Notifications { get; } = new();
     public ObservableCollection<string> SearchTags { get; } = new();
+    public ObservableCollection<ConversationItemViewModel> Conversations { get; } = new();
+    public ObservableCollection<MessageItemViewModel> ThreadMessages { get; } = new();
     public TumblrClient Client => _client;
+    public bool ShowFeed => !IsNotificationsPage && !IsMessagesPage;
     public string PrimaryBlog => _blog;
 
     public List<FeedOption> Feeds { get; } = new()
@@ -183,6 +186,7 @@ public sealed partial class MainViewModel : ObservableObject
         new("explore", "Explore"),
         new("likes", "Likes"),
         new("notifications", "Activity"),
+        new("messages", "Messages"),
     };
 
     [ObservableProperty] private FeedOption? _selectedFeed;
@@ -194,6 +198,15 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _canGoBack;
     [ObservableProperty] private bool _isTagPage;
     [ObservableProperty] private bool _isNotificationsPage;
+    [ObservableProperty] private bool _isMessagesPage;
+
+    partial void OnIsNotificationsPageChanged(bool value) => OnPropertyChanged(nameof(ShowFeed));
+    partial void OnIsMessagesPageChanged(bool value) => OnPropertyChanged(nameof(ShowFeed));
+    [ObservableProperty] private bool _inThread;
+    [ObservableProperty] private ConversationItemViewModel? _selectedConversation;
+    [ObservableProperty] private string _threadTitle = "";
+    [ObservableProperty] private string _composerText = "";
+    [ObservableProperty] private bool _isSending;
     [ObservableProperty] private bool _hasSearchMeta;
     [ObservableProperty] private string _searchQuery = "";
     [ObservableProperty] private bool _isBlogPage;
@@ -239,11 +252,22 @@ public sealed partial class MainViewModel : ObservableObject
         Headline = value.Label;
         CanGoBack = false;
         IsBlogPage = false;
+        IsMessagesPage = false;
+        InThread = false;
         if (value.Key == "notifications")
         {
             IsNotificationsPage = true;
             SearchBlogs.Clear(); HasSearchMeta = false;
             _ = LoadNotificationsAsync();
+            return;
+        }
+        if (value.Key == "messages")
+        {
+            IsNotificationsPage = false;
+            IsMessagesPage = true;
+            InThread = false;
+            SearchBlogs.Clear(); HasSearchMeta = false;
+            _ = LoadConversationsAsync();
             return;
         }
         IsNotificationsPage = false;
@@ -462,6 +486,83 @@ public sealed partial class MainViewModel : ObservableObject
             Status = ex is TumblrException ? ex.Message : $"Couldn't load more: {ex.Message}";
         }
         finally { IsLoading = false; }
+    }
+
+    private async Task LoadConversationsAsync()
+    {
+        if (IsLoading) return;
+        IsLoading = true;
+        try
+        {
+            Conversations.Clear();
+            var page = await _client.GetConversationsAsync();
+            foreach (var conversation in page.Conversations)
+                Conversations.Add(new ConversationItemViewModel(conversation, this));
+            Subhead = $"{Conversations.Count} conversations";
+            HasStatus = Conversations.Count == 0;
+            Status = Conversations.Count == 0 ? "No messages yet." : "";
+        }
+        catch (Exception ex)
+        {
+            HasStatus = true;
+            Status = ex is TumblrException ? ex.Message : $"Couldn't load messages: {ex.Message}";
+        }
+        finally { IsLoading = false; }
+    }
+
+    public async Task OpenConversationAsync(ConversationItemViewModel item)
+    {
+        SelectedConversation = item;
+        InThread = true;
+        ThreadTitle = item.Title;
+        ThreadMessages.Clear();
+        try
+        {
+            var messages = await _client.GetMessagesAsync(item.Conversation.Id);
+            foreach (var message in messages)
+                ThreadMessages.Add(new MessageItemViewModel(message, Identity, item.Conversation));
+            Headline = item.Title;
+        }
+        catch (Exception ex)
+        {
+            HasStatus = true;
+            Status = ex is TumblrException ? ex.Message : $"Couldn't load the conversation: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    public async Task SendMessageAsync()
+    {
+        if (IsSending || string.IsNullOrWhiteSpace(ComposerText) || SelectedConversation is null) return;
+        var text = ComposerText.Trim();
+        var conversation = SelectedConversation.Conversation;
+        var participant = conversation.Participants
+            .FirstOrDefault(p => !p.Equals(Identity, StringComparison.OrdinalIgnoreCase));
+        if (participant is null) { Status = "No recipient on this conversation."; HasStatus = true; return; }
+
+        IsSending = true;
+        try
+        {
+            await _client.SendMessageAsync(participant, text, conversation.Id);
+            ComposerText = "";
+            var sent = new Message { Text = text, Participant = Identity, Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() };
+            ThreadMessages.Add(new MessageItemViewModel(sent, Identity, conversation) { });
+        }
+        catch (Exception ex)
+        {
+            HasStatus = true;
+            Status = ex is TumblrException ? ex.Message : $"Couldn't send: {ex.Message}";
+        }
+        finally { IsSending = false; }
+    }
+
+    [RelayCommand]
+    public void BackToConversations()
+    {
+        InThread = false;
+        SelectedConversation = null;
+        ThreadMessages.Clear();
+        _ = LoadConversationsAsync();
     }
 
     public async Task ToggleLikeAsync(PostItemViewModel item)
