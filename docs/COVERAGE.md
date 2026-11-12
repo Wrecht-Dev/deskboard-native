@@ -41,7 +41,7 @@ Legend: ✅ working & verified live · 🟡 partial · ⏳ planned · ⛔ exclud
 | Text blocks (headings/quotes/lists) | ✅ | NPF formatting → styled runs (bold/italic/strike/underline/links), headings, quotes, bullets |
 | Photoset grids (1–4 images) | ✅ | single image or 2-col grid, lazy + cached |
 | Animated GIFs | ✅ | Skia frame decode + timer playback; verified animating (frame captures differ) |
-| Video / audio | 🟡 | poster + badge opens the system player; inline decode not wired |
+| Video / audio | 🟡 | poster + badge opens the system player. Inline LibVLC was prototyped and **reverted**: it crashes natively (uncatchable) when libvlc or the video output is missing, which is unacceptable for a Beta; a safe fallback ships instead |
 | Audio | ⏳ | |
 | Polls | ⏳ | |
 | Post actions (like/reblog/reply/follow/ask) | ✅ | like (optimistic), reblog dialog (3 modes), reply from permalink, follow + ask on blog pages |

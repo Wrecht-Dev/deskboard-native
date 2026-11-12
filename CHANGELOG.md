@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.3 — Beta (unreleased)
+## 0.2.3 — Beta
 
 - Hide-mature-posts toggle (Tumblr isAdult flag; best-effort).
 - Friendly offline/timeout errors.

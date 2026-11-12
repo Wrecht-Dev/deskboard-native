@@ -81,8 +81,9 @@ account content appears anywhere in this repository.
 
 ### Known limitations
 
-- **Inline video/audio decoding** is not wired; badges hand the media to your
-  system player instead.
+- **Inline video/audio decoding** is not embedded. A LibVLC integration was
+  prototyped and reverted because it can crash natively when VLC is absent; the
+  badge safely opens your system player instead.
 - Write actions are **wired and API/unit-tested but never fired against a real
   account** except an authorised like/unlike test. That is deliberate.
 - Torn between fidelity and risk: no Premium/Blaze purchases, domains,
