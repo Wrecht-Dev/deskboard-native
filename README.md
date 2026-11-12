@@ -149,6 +149,10 @@ docs/reference/       real Tumblr UI screenshots used as design reference
 3. **Composer** — NPF text/quote/link/photo, uploads, publish/queue/draft/schedule.
 4. **Platform polish** — native menus, tray, Windows/macOS packaging, auto-update.
 
+## Beta status
+
+Evidence and known gaps: [`docs/BETA.md`](docs/BETA.md).
+
 ## Security
 
 No credentials are committed. Session cookies live only in your local store, the
