@@ -247,6 +247,8 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _isPinnedTop;
     [ObservableProperty] private bool _hasPinnedTabs;
     [ObservableProperty] private bool _hasBookmarks;
+    [ObservableProperty] private bool _hasUpdate;
+    [ObservableProperty] private string _updateLabel = "";
     [ObservableProperty] private bool _isBookmarksPage;
     [ObservableProperty] private int _hiddenCount;
     [ObservableProperty] private bool _showFiltered;
@@ -311,6 +313,35 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
+    private string _updateUrl = "";
+
+    public async Task CheckForUpdatesAsync()
+    {
+        try
+        {
+            var update = await UpdateChecker.CheckAsync(AppInfo.Version);
+            if (update is null || !AppInfo.IsNewer(update.LatestTag, AppInfo.Version)) return;
+            _updateUrl = update.Url;
+            UpdateLabel = $"Update {update.LatestTag}";
+            HasUpdate = true;
+        }
+        catch (Exception) { }
+    }
+
+    [RelayCommand]
+    public void OpenUpdate()
+    {
+        if (_updateUrl.Length == 0) return;
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(_updateUrl)
+            {
+                UseShellExecute = true,
+            });
+        }
+        catch (Exception) { }
+    }
+
     public async Task InitializeAsync()
     {
         Status = "Connecting to Tumblr…"; HasStatus = true;
@@ -335,6 +366,7 @@ public sealed partial class MainViewModel : ObservableObject
                 if (attempt == 0) await Task.Delay(600);
             }
         }
+        _ = CheckForUpdatesAsync();
         await LoadFeedAsync();
     }
 

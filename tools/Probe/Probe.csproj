@@ -11,4 +11,5 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup><ProjectReference Include="../../src/Deskboard.App/Deskboard.App.csproj" /></ItemGroup>
 </Project>

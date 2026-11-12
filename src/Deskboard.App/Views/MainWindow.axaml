@@ -53,6 +53,9 @@
         <StackPanel Grid.Row="5" Spacing="10" Margin="20,0">
           <TextBlock Text="{Binding Identity}" Classes="dim" FontSize="12" />
           <Button Classes="accent" Content="Create" HorizontalAlignment="Stretch" Click="OnCreate" />
+          <Button Content="{Binding UpdateLabel}" Command="{Binding OpenUpdateCommand}"
+                  IsVisible="{Binding HasUpdate}" Classes="accent" FontSize="12"
+                  HorizontalAlignment="Stretch" />
           <Button Content="Settings" Click="OnSettings" FontSize="12" HorizontalAlignment="Stretch" />
           <TextBlock Text="native rewrite · .NET + Avalonia" Classes="dim" FontSize="10" />
         </StackPanel>

@@ -11,6 +11,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 APP="$ROOT/src/Deskboard.App/Deskboard.App.csproj"
 STAGE="$OUT/stage-$RID"
 NAME="deskboard-native-$RID"
+VERSION="${VERSION:-0.2.0}"
 
 rm -rf "$STAGE"; mkdir -p "$STAGE/$NAME"
 
@@ -49,8 +50,8 @@ LAUNCH
 <dict>
   <key>CFBundleName</key><string>Deskboard</string>
   <key>CFBundleIdentifier</key><string>dev.wrecht.deskboard.native</string>
-  <key>CFBundleVersion</key><string>0.1.0</string>
-  <key>CFBundleShortVersionString</key><string>0.1.0</string>
+  <key>CFBundleVersion</key><string>${VERSION}</string>
+  <key>CFBundleShortVersionString</key><string>${VERSION}</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleExecutable</key><string>Deskboard.App</string>
   <key>LSMinimumSystemVersion</key><string>12.0</string>
