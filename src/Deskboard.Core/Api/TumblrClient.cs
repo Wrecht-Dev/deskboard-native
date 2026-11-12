@@ -527,6 +527,17 @@ public sealed partial class TumblrClient : IDisposable
         return FlattenSettings(doc.RootElement);
     }
 
+    /// <summary>Write blog settings (only the supplied keys are sent).</summary>
+    public Task UpdateBlogSettingsAsync(string blog, IDictionary<string, string> values,
+        CancellationToken ct = default)
+        => SendWriteAsync(HttpMethod.Post, $"/v2/blog/{Uri.EscapeDataString(blog)}/settings",
+            form: values.ToDictionary(kv => kv.Key, kv => (string?)kv.Value), ct: ct).AsVoid();
+
+    /// <summary>Write account settings (only the supplied keys are sent).</summary>
+    public Task UpdateUserSettingsAsync(IDictionary<string, string> values, CancellationToken ct = default)
+        => SendWriteAsync(HttpMethod.Post, "/v2/user/settings",
+            form: values.ToDictionary(kv => kv.Key, kv => (string?)kv.Value), ct: ct).AsVoid();
+
     /// <summary>Read account settings.</summary>
     public async Task<Dictionary<string, string>> GetUserSettingsAsync(CancellationToken ct = default)
     {

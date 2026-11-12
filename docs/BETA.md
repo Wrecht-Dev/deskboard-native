@@ -44,7 +44,8 @@ Only `like`/`unlike` has been exercised live (with explicit permission).
 ## Formerly missing, now implemented
 
 - **Blog / account settings reads** — 39 blog keys and 34 account keys returned
-  live and displayed in Settings.
+  live and displayed in Settings. Settings **writes** are implemented as
+  key/value form posts and are not fired from the UI.
 - **@mention autocomplete** — live (`/v2/mention/art` → 5 suggestions).
 - **Audio upload** — multipart endpoint (field `audio`) implemented; not fired.
 - **Draft actions** — publish-now (state change) and delete, with confirmation.

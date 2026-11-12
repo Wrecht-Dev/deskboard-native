@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.5 — Beta
+
+- Settings write methods complete the documented API surface.
+
 ## 0.2.4 — Beta
 
 - Blog and account settings read + display.
