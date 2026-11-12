@@ -91,6 +91,7 @@ public sealed class Blog
     public long Posts { get; init; }
     public bool IsFollowing { get; init; }
     public bool Ask { get; init; }
+    public bool AskAnon { get; init; }
     public bool CanSubmit { get; init; }
 
     public string DisplayName => string.IsNullOrEmpty(Title) ? Name : Title;

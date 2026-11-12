@@ -35,6 +35,32 @@ public partial class MainWindow : Window
         await window.ShowDialog(this);
     }
 
+    private void OnOpenPost(object? sender, Avalonia.Input.TappedEventArgs e)
+    {
+        if (e.Source is not Control control || control.DataContext is not PostItemViewModel item) return;
+        if (DataContext is not MainViewModel vm) return;
+        var window = new PostDetailWindow
+        {
+            DataContext = new PostDetailViewModel(item, vm.Client, vm.PrimaryBlog),
+        };
+        window.Show(this);
+    }
+
+    private void OnFollow(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is MainViewModel vm) _ = vm.ToggleFollowAsync();
+    }
+
+    private async void OnAsk(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainViewModel vm || !vm.CanAsk) return;
+        var window = new AskWindow
+        {
+            DataContext = new AskViewModel(vm.Client, vm.Headline, vm.CanAskAnon),
+        };
+        await window.ShowDialog(this);
+    }
+
     private void OnScrollChanged(object? sender, ScrollChangedEventArgs e)
     {
         if (DataContext is not MainViewModel vm) return;

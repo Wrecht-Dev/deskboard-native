@@ -195,6 +195,7 @@ internal static class BlogParser
             Posts = b.Num("posts"),
             IsFollowing = b.Bool("isFollowing"),
             Ask = b.Bool("ask"),
+            AskAnon = b.Bool("askAnon"),
             CanSubmit = b.Bool("canSubmit"),
         };
     }

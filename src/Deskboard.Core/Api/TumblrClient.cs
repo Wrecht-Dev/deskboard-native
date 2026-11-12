@@ -142,6 +142,56 @@ public sealed partial class TumblrClient : IDisposable
         return true;
     }
 
+    /// <summary>Notes on a post: likes, reblogs, replies, follows.</summary>
+    public async Task<NotesPage> GetNotesAsync(string blog, string postId, string? url = null,
+        CancellationToken ct = default)
+    {
+        var path = url ?? $"/v2/blog/{Uri.EscapeDataString(blog)}/notes?id={Uri.EscapeDataString(postId)}&mode=all";
+        using var doc = await SendAsync(HttpMethod.Get, path, ct: ct).ConfigureAwait(false);
+        return ParseNotes(doc.RootElement);
+    }
+
+    private static NotesPage ParseNotes(JsonElement root)
+    {
+        var response = root.TryGetProperty("response", out var r) ? r : root;
+        var notes = new List<Note>();
+        if (response.ValueKind == JsonValueKind.Object &&
+            response.TryGetProperty("notes", out var arr) && arr.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var n in arr.EnumerateArray())
+            {
+                if (n.ValueKind != JsonValueKind.Object) continue;
+                notes.Add(new Note
+                {
+                    Type = n.Str("type"),
+                    Timestamp = n.Num("timestamp"),
+                    BlogName = n.Str("blogName"),
+                    BlogTitle = n.Str("blogTitle"),
+                    BlogUrl = n.Str("blogUrl"),
+                    AvatarUrl = n.Str("avatarUrl"),
+                    Followed = n.Bool("followed"),
+                    Adult = n.Bool("blogIsAdult"),
+                });
+            }
+        }
+
+        string? next = null;
+        if (response.ValueKind == JsonValueKind.Object && response.TryGetProperty("links", out var links) &&
+            links.ValueKind == JsonValueKind.Object && links.TryGetProperty("next", out var n2) &&
+            n2.ValueKind == JsonValueKind.Object && n2.TryGetProperty("href", out var href))
+            next = href.GetString();
+
+        return new NotesPage
+        {
+            Notes = notes,
+            Total = (int)(response.ValueKind == JsonValueKind.Object ? response.Num("totalNotes") : 0),
+            TotalLikes = (int)(response.ValueKind == JsonValueKind.Object ? response.Num("totalLikes") : 0),
+            TotalReblogs = (int)(response.ValueKind == JsonValueKind.Object ? response.Num("totalReblogs") : 0),
+            TotalReplies = (int)(response.ValueKind == JsonValueKind.Object ? response.Num("totalReplies") : 0),
+            NextUrl = next,
+        };
+    }
+
     /// <summary>Write request: carries the CSRF token and retries once when it is stale.</summary>
     private async Task<JsonDocument> SendWriteAsync(HttpMethod method, string path,
         IDictionary<string, string?>? query = null, IDictionary<string, string?>? form = null,

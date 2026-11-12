@@ -1,0 +1,83 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Deskboard.App.ViewModels"
+        xmlns:controls="using:Deskboard.App.Controls"
+        x:Class="Deskboard.App.Views.PostDetailWindow"
+        x:DataType="vm:PostDetailViewModel"
+        Title="Post" Width="760" Height="860"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource PageBrush}">
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Background="{StaticResource RailBrush}" Padding="18,12">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Spacing="1">
+          <TextBlock Text="{Binding Item.BlogName}" FontWeight="Bold" FontSize="16" />
+          <TextBlock Text="{Binding Item.Handle}" Classes="dim" FontSize="12" />
+        </StackPanel>
+        <Button Grid.Column="1" Content="Close" Command="{Binding CloseCommand}" />
+      </Grid>
+    </Border>
+
+    <Border DockPanel.Dock="Bottom" Padding="18,12" Background="{StaticResource RailBrush}"
+            IsVisible="{Binding CanReply}">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+        <TextBox Grid.Column="0" Text="{Binding ReplyText}" Watermark="Reply to this post…"
+                 AcceptsReturn="False" />
+        <Button Grid.Column="1" Classes="accent" Content="Reply"
+                Command="{Binding ReplyCommand}" IsEnabled="{Binding !IsReplying}" />
+      </Grid>
+    </Border>
+
+    <ScrollViewer Padding="26,18">
+      <StackPanel Spacing="14" MaxWidth="640">
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <Border Width="44" Height="44" CornerRadius="22" ClipToBounds="True" Background="#25323D">
+                <Image Source="{Binding Item.Avatar}" Stretch="UniformToFill" />
+              </Border>
+              <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                <TextBlock Text="{Binding Item.BlogName}" FontWeight="SemiBold" FontSize="16" />
+                <TextBlock Text="{Binding Item.Handle}" Classes="dim" FontSize="12" />
+              </StackPanel>
+              <TextBlock Grid.Column="2" Text="{Binding Item.TimeAgo}" Classes="dim" FontSize="12" />
+            </Grid>
+            <TextBlock Text="{Binding Item.RebloggedFrom}" Classes="dim" FontSize="12"
+                       IsVisible="{Binding Item.HasReblogLabel}" />
+            <controls:PostBody Paragraphs="{Binding Item.Paragraphs}" IsVisible="{Binding Item.HasBody}" />
+            <Border IsVisible="{Binding Item.SingleMedia}" CornerRadius="8" ClipToBounds="True" Background="#0F0F0F">
+              <Image Source="{Binding Item.Media[0].Bitmap}" Stretch="Uniform" MaxHeight="{Binding Item.Media[0].Height}" />
+            </Border>
+            <TextBlock Text="{Binding Item.TagsText}" Classes="tag" FontSize="13"
+                       IsVisible="{Binding Item.HasTags}" />
+          </StackPanel>
+        </Border>
+
+        <TextBlock Text="{Binding NotesHeadline}" Classes="heading" Margin="0,8,0,0" />
+
+        <ItemsControl ItemsSource="{Binding Notes}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:NoteViewModel">
+              <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,10">
+                <Border Width="30" Height="30" CornerRadius="15" ClipToBounds="True" Background="#25323D"
+                        VerticalAlignment="Top">
+                  <Image Source="{Binding Avatar}" Stretch="UniformToFill" />
+                </Border>
+                <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                  <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="13" />
+                  <TextBlock Text="{Binding Action}" Classes="dim" FontSize="12" />
+                </StackPanel>
+                <TextBlock Grid.Column="2" Text="{Binding TimeAgo}" Classes="dim" FontSize="12" />
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <Button Content="Load more notes" Command="{Binding LoadNotesCommand}" IsVisible="{Binding HasMore}"
+                HorizontalAlignment="Center" Margin="0,0,0,14" />
+        <TextBlock Text="{Binding Status}" Classes="dim" FontSize="13" IsVisible="{Binding HasStatus}" />
+        <TextBlock Text="{Binding ReplyStatus}" Classes="dim" FontSize="12" />
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</Window>

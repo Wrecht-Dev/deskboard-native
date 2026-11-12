@@ -1,0 +1,25 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Deskboard.App.ViewModels"
+        x:Class="Deskboard.App.Views.AskWindow"
+        x:DataType="vm:AskViewModel"
+        Title="Ask" Width="520" Height="400"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource PageBrush}">
+  <StackPanel Margin="22" Spacing="12">
+    <TextBlock Text="{Binding Title}" Classes="heading" />
+    <TextBlock Text="Your question" Classes="dim" FontSize="12" />
+    <TextBox Text="{Binding Question}" AcceptsReturn="True" TextWrapping="Wrap" Height="150"
+             Watermark="What do you want to ask?" />
+    <CheckBox Content="Ask anonymously" IsChecked="{Binding Anonymous}" IsVisible="{Binding AllowAnonymous}" />
+    <TextBlock Text="{Binding Error}" Foreground="#FF7B7B" FontSize="13" IsVisible="{Binding HasError}" />
+    <TextBlock Text="{Binding Hint}" Classes="dim" FontSize="12" />
+    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+      <TextBlock Grid.Column="0" Text="{Binding Counter}" Classes="dim" FontSize="12"
+                 VerticalAlignment="Center" />
+      <Button Grid.Column="1" Content="Cancel" Command="{Binding CancelCommand}" />
+      <Button Grid.Column="2" Classes="accent" Content="Send" Command="{Binding SendCommand}"
+              IsEnabled="{Binding CanSend}" />
+    </Grid>
+  </StackPanel>
+</Window>

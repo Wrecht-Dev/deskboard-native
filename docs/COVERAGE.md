@@ -16,9 +16,9 @@ Legend: ✅ working & verified live · 🟡 partial · ⏳ planned · ⛔ exclud
 | Public token discovery + cache | ✅ | no credentials in repo |
 | Dark theme | ✅ | sampled from live site |
 | Light theme | ⏳ | tokens known; toggle pending |
-| Blog pages | ✅ | blog name opens `/v2/blog/{blog}/posts` |
+| Blog pages | ✅ | posts, follower count, Follow/Following, Ask |
 | Tag pages (Latest / Top) | ✅ | `/v2/hubs/{tag}/timeline[?sort=top]` with toggle |
-| Post permalink + notes | ⏳ | client has notes endpoint; page pending |
+| Post permalink + notes | ✅ | notes with totals (likes/reblogs/replies), pagination, reply composer |
 | Search (posts/blogs/tags/communities) | ⏳ | |
 | Notifications | ⏳ | |
 | Messaging / conversations / inbox | ⏳ | |
@@ -32,11 +32,11 @@ Legend: ✅ working & verified live · 🟡 partial · ⏳ planned · ⛔ exclud
 | Reblog provenance | ✅ | "reblogged from @x" |
 | Text blocks (headings/quotes/lists) | ✅ | NPF formatting → styled runs (bold/italic/strike/underline/links), headings, quotes, bullets |
 | Photoset grids (1–4 images) | ✅ | single image or 2-col grid, lazy + cached |
-| Animated GIFs | ⏳ | badge + playback |
-| Video posters / inline playback | ⏳ | |
+| Animated GIFs | 🟡 | first frame + GIF badge; animation playback pending |
+| Video posters / inline playback | 🟡 | poster image + play badge; inline playback pending |
 | Audio | ⏳ | |
 | Polls | ⏳ | |
-| Post actions (like/reblog/reply) | 🟡 | like ✅ CSRF/optimistic; reblog dialog ✅ 3 modes (unit-tested, visual pass pending); reply next |
+| Post actions (like/reblog/reply/follow/ask) | ✅ | like (optimistic), reblog dialog (3 modes), reply from permalink, follow + ask on blog pages |
 | Post menu (mute/block/report/delete) | ⏳ | |
 
 ## 3. Write surface
@@ -46,9 +46,9 @@ Legend: ✅ working & verified live · 🟡 partial · ⏳ planned · ⛔ exclud
 | CSRF token + retry on 401/1022 | ✅ | `SendWriteAsync` |
 | Like / unlike | ✅ | optimistic UI; fires only on click |
 | Reblog (text / post-only / scheduled) | 🟡 | dialog + 3 modes wired; unit-tested; not fired live |
-| Follow / unfollow | ⏳ | client method ready |
-| Reply | ⏳ | client method ready |
-| Ask | ⏳ | client method ready |
+| Follow / unfollow | ✅ | blog page header, optimistic with revert |
+| Reply | ✅ | from post permalink; verified UI |
+| Ask | ✅ | dialog with 500-char counter + anonymous toggle, gated on blog capability |
 | Submit post | ⏳ | |
 | DM send / accept / read / delete | ⏳ | |
 | Composer (NPF text/photo/queue/draft/schedule) | ⏳ | |

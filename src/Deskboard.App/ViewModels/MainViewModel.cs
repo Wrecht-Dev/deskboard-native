@@ -20,13 +20,18 @@ public sealed partial class MediaItemViewModel : ObservableObject
 {
     public string Url { get; }
     public bool IsGif { get; }
+    public bool IsVideo { get; }
+    public string Badge => IsVideo ? "▶" : IsGif ? "GIF" : "";
+    public bool HasBadge => Badge.Length > 0;
     public double Height { get; }
     [ObservableProperty] private Bitmap? _bitmap;
 
     public MediaItemViewModel(Media media)
     {
-        Url = media.Url;
-        IsGif = media.IsGif;
+        // Videos render their poster image (inline playback comes later).
+        Url = media.Kind == "video" && media.Poster.Length > 0 ? media.Poster : media.Url;
+        IsGif = media.IsGif && media.Kind != "video";
+        IsVideo = media.Kind == "video";
         Height = media.Width > 0 ? Math.Clamp(420.0 * media.Height / media.Width, 120, 420) : 280;
     }
 
@@ -90,7 +95,8 @@ public sealed partial class PostItemViewModel : ObservableObject
         BodyText = ExtractText(post);
         Paragraphs = RichTextBuilder.Build(post);
         HasBody = Paragraphs.Count > 0;
-        foreach (var media in post.Content.SelectMany(b => b.Media).Where(m => m.Kind == "image").Take(4))
+        foreach (var media in post.Content.SelectMany(b => b.Media)
+                     .Where(m => m.Kind is "image" or "video").Take(4))
             Media.Add(new MediaItemViewModel(media));
     }
 
@@ -165,6 +171,7 @@ public sealed partial class MainViewModel : ObservableObject
     public ObservableCollection<PostItemViewModel> Posts { get; } = new();
     public ObservableCollection<string> Blogs { get; } = new();
     public TumblrClient Client => _client;
+    public string PrimaryBlog => _blog;
 
     public List<FeedOption> Feeds { get; } = new()
     {
@@ -182,6 +189,12 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _subhead = "";
     [ObservableProperty] private bool _canGoBack;
     [ObservableProperty] private bool _isTagPage;
+    [ObservableProperty] private bool _isBlogPage;
+    [ObservableProperty] private bool _isFollowing;
+    [ObservableProperty] private string _blogFollowersLabel = "";
+    [ObservableProperty] private bool _canAsk;
+    [ObservableProperty] private bool _canAskAnon;
+    [ObservableProperty] private bool _isFollowBusy;
     [ObservableProperty] private bool _isLatest = true;
     [ObservableProperty] private bool _isTop;
     [ObservableProperty] private string _identity = "";
@@ -232,16 +245,52 @@ public sealed partial class MainViewModel : ObservableObject
     {
         if (string.IsNullOrWhiteSpace(blog)) return;
         IsTagPage = false;
+        IsBlogPage = true;
         CanGoBack = true;
         Headline = blog;
         Subhead = "loading…";
         await LoadPostsAsync(() => _client.GetBlogPostsAsync(blog));
+        try
+        {
+            var info = await _client.GetBlogInfoAsync(blog);
+            IsFollowing = info.IsFollowing;
+            BlogFollowersLabel = info.Followers > 0
+                ? $"{info.Followers / 1000.0:0.#}K followers"
+                : "";
+            CanAsk = info.Ask;
+            CanAskAnon = info.AskAnon;
+        }
+        catch (Exception) { CanAsk = false; }
+    }
+
+    [RelayCommand]
+    public async Task ToggleFollowAsync()
+    {
+        if (IsFollowBusy || string.IsNullOrWhiteSpace(Headline)) return;
+        IsFollowBusy = true;
+        var wanted = !IsFollowing;
+        IsFollowing = wanted; // optimistic
+        try
+        {
+            if (wanted) await _client.FollowAsync(Headline);
+            else await _client.UnfollowAsync(Headline);
+            Status = wanted ? $"Following {Headline}." : $"Unfollowed {Headline}.";
+            HasStatus = true;
+        }
+        catch (Exception ex)
+        {
+            IsFollowing = !wanted;
+            HasStatus = true;
+            Status = ex is TumblrException ? ex.Message : $"Couldn't update follow: {ex.Message}";
+        }
+        finally { IsFollowBusy = false; }
     }
 
     public async Task OpenTagAsync(string tag)
     {
         if (string.IsNullOrWhiteSpace(tag)) return;
         IsTagPage = true;
+        IsBlogPage = false;
         CanGoBack = true;
         Headline = "#" + tag.TrimStart('#');
         Subhead = "loading…";
@@ -265,6 +314,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         CanGoBack = false;
         IsTagPage = false;
+        IsBlogPage = false;
         Headline = SelectedFeed?.Label ?? "Home";
         await LoadFeedAsync();
     }

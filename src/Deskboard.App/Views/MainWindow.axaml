@@ -42,6 +42,15 @@
             <TextBlock Text="{Binding Subhead}" Classes="dim" FontSize="13" />
           </StackPanel>
           <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6"
+                      IsVisible="{Binding IsBlogPage}" VerticalAlignment="Center">
+            <TextBlock Text="{Binding BlogFollowersLabel}" Classes="dim" FontSize="12"
+                       VerticalAlignment="Center" Margin="0,0,6,0" />
+            <Button Content="Ask" Click="OnAsk" IsVisible="{Binding CanAsk}" />
+            <Button Content="Follow" Classes="accent" Click="OnFollow"
+                    IsVisible="{Binding !IsFollowing}" />
+            <Button Content="Following" Click="OnFollow" IsVisible="{Binding IsFollowing}" />
+          </StackPanel>
+          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6"
                       IsVisible="{Binding IsTagPage}" VerticalAlignment="Center">
             <Button Content="Latest" Classes="chip" FontSize="13" Padding="12,5"
                     Command="{Binding SetTagSortCommand}" CommandParameter="latest" />
@@ -56,7 +65,8 @@
       </Border>
 
       <ListBox Name="FeedList" Classes="feed" ItemsSource="{Binding Posts}"
-               ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+               ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+               DoubleTapped="OnOpenPost">
         <ListBox.ItemTemplate>
           <DataTemplate x:DataType="vm:PostItemViewModel">
             <Border Classes="card" Margin="0,0,0,14" MaxWidth="640">
@@ -82,8 +92,16 @@
                 <controls:PostBody Paragraphs="{Binding Paragraphs}" IsVisible="{Binding HasBody}" />
 
                 <Border IsVisible="{Binding SingleMedia}" CornerRadius="8" ClipToBounds="True" Background="#0F0F0F">
-                  <Image Source="{Binding Media[0].Bitmap}" Stretch="Uniform"
-                         MaxHeight="{Binding Media[0].Height}" />
+                  <Grid>
+                    <Image Source="{Binding Media[0].Bitmap}" Stretch="Uniform"
+                           MaxHeight="{Binding Media[0].Height}" />
+                    <Border Background="#CC000000" CornerRadius="4" Padding="8,4" Margin="10"
+                            HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                            IsVisible="{Binding Media[0].HasBadge}">
+                      <TextBlock Text="{Binding Media[0].Badge}" FontSize="12" FontWeight="Bold"
+                                 Foreground="White" />
+                    </Border>
+                  </Grid>
                 </Border>
 
                 <ItemsControl ItemsSource="{Binding Media}" IsVisible="{Binding MultipleMedia}">
