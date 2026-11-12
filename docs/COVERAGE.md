@@ -90,6 +90,14 @@ validation.
 3. Search, notifications, messaging, inbox, drafts/queue.
 4. Composer + settings; light theme; parity pass against `docs/reference`.
 
+## Last verification sweep
+
+- `dotnet build Deskboard.sln` — 0 errors
+- `dotnet test` — 32/32 passing
+- dark-theme smoke — window opens, feed renders, 0 tracebacks
+- light-theme smoke — same, palette applied from persisted setting
+- commit `36a04e3`
+
 ## Final summary
 
 **Implemented and live-verified:** shell, feeds (Home/Following/Explore/Likes),
