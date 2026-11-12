@@ -53,6 +53,7 @@
             <TextBlock Text="{Binding BlogFollowersLabel}" Classes="dim" FontSize="12"
                        VerticalAlignment="Center" Margin="0,0,6,0" />
             <Button Content="Ask" Click="OnAsk" IsVisible="{Binding CanAsk}" />
+            <Button Content="Submit" Click="OnSubmitPost" IsVisible="{Binding CanSubmitBlog}" />
             <Button Content="Follow" Classes="accent" Click="OnFollow"
                     IsVisible="{Binding !IsFollowing}" />
             <Button Content="Following" Click="OnFollow" IsVisible="{Binding IsFollowing}" />
@@ -134,7 +135,9 @@
                               Foreground="#9AA7B4" VerticalAlignment="Center">
                         <Button.Flyout>
                           <MenuFlyout>
-                            <MenuItem Header="Mute post" Click="OnMutePost" />
+                            <MenuItem Header="Edit post" Click="OnEditPost"
+                                    IsVisible="{Binding IsMine}" />
+                          <MenuItem Header="Mute post" Click="OnMutePost" />
                             <MenuItem Header="Block blog" Click="OnBlockBlog" />
                             <MenuItem Header="Report post" Click="OnReportPost" />
                             <Separator />

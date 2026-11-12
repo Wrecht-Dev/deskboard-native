@@ -8,7 +8,7 @@
         Background="{DynamicResource PageBrush}">
   <DockPanel Margin="20">
     <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,12">
-      <TextBlock Text="New post" Classes="heading" VerticalAlignment="Center" />
+      <TextBlock Text="{Binding WindowTitle}" Classes="heading" VerticalAlignment="Center" />
       <ComboBox Grid.Column="1" ItemsSource="{Binding Blogs}" SelectedItem="{Binding SelectedBlog}"
                 MinWidth="200" />
     </Grid>
@@ -18,11 +18,17 @@
                  IsVisible="{Binding HasStatus}" Margin="0,0,0,8" />
       <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8">
         <Button Content="Add image" Click="OnAttach" />
-        <Button Content="Schedule" Command="{Binding ToggleScheduleCommand}" />
         <TextBlock Text="{Binding CharacterLabel}" Classes="dim" FontSize="12" VerticalAlignment="Center" />
-        <Button Content="Save draft" Command="{Binding DraftCommand}" IsEnabled="{Binding CanSubmit}" />
-        <Button Content="Queue" Command="{Binding QueueCommand}" IsEnabled="{Binding CanSubmit}" />
-        <Button Classes="accent" Content="Publish" Command="{Binding PublishCommand}" IsEnabled="{Binding CanSubmit}" />
+        <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsNew}">
+          <Button Content="Schedule" Command="{Binding ToggleScheduleCommand}" />
+          <Button Content="Save draft" Command="{Binding DraftCommand}" IsEnabled="{Binding CanSubmit}" />
+          <Button Content="Queue" Command="{Binding QueueCommand}" IsEnabled="{Binding CanSubmit}" />
+          <Button Classes="accent" Content="Publish" Command="{Binding PublishCommand}" IsEnabled="{Binding CanSubmit}" />
+        </StackPanel>
+        <Button Classes="accent" Content="Submit" IsVisible="{Binding IsSubmit}"
+                Command="{Binding SaveCommand}" IsEnabled="{Binding CanSubmit}" />
+        <Button Classes="accent" Content="Save" IsVisible="{Binding IsEdit}"
+                Command="{Binding SaveCommand}" IsEnabled="{Binding CanSubmit}" />
       </StackPanel>
     </Grid>
 

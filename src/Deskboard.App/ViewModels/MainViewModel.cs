@@ -21,7 +21,8 @@ public sealed partial class MediaItemViewModel : ObservableObject
     public string Url { get; }
     public bool IsGif { get; }
     public bool IsVideo { get; }
-    public string Badge => IsVideo ? "▶" : IsGif ? "GIF" : "";
+    public bool IsAudio { get; }
+    public string Badge => IsVideo ? "▶" : IsAudio ? "♪" : IsGif ? "GIF" : "";
     public bool HasBadge => Badge.Length > 0;
     public double Height { get; }
     [ObservableProperty] private Bitmap? _bitmap;
@@ -32,6 +33,7 @@ public sealed partial class MediaItemViewModel : ObservableObject
         Url = media.Kind == "video" && media.Poster.Length > 0 ? media.Poster : media.Url;
         IsGif = media.IsGif && media.Kind != "video";
         IsVideo = media.Kind == "video";
+        IsAudio = media.Kind == "audio";
         Height = media.Width > 0 ? Math.Clamp(420.0 * media.Height / media.Width, 120, 420) : 280;
     }
 
@@ -58,6 +60,8 @@ public sealed partial class PostItemViewModel : ObservableObject
     public string FirstTag { get; }
     public bool HasTags { get; }
     public bool HasReblogLabel { get; }
+    public bool IsMine => _host.PrimaryBlog.Length > 0 &&
+                          Post.BlogName.Equals(_host.PrimaryBlog, StringComparison.OrdinalIgnoreCase);
     public string RebloggedFrom { get; }
     public string BodyText { get; }
     public bool HasBody { get; }
@@ -96,7 +100,7 @@ public sealed partial class PostItemViewModel : ObservableObject
         Paragraphs = RichTextBuilder.Build(post);
         HasBody = Paragraphs.Count > 0;
         foreach (var media in post.Content.SelectMany(b => b.Media)
-                     .Where(m => m.Kind is "image" or "video").Take(4))
+                     .Where(m => m.Kind is "image" or "video" or "audio").Take(4))
             Media.Add(new MediaItemViewModel(media));
     }
 
@@ -218,6 +222,7 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _isFollowing;
     [ObservableProperty] private string _blogFollowersLabel = "";
     [ObservableProperty] private bool _canAsk;
+    [ObservableProperty] private bool _canSubmitBlog;
     [ObservableProperty] private bool _canAskAnon;
     [ObservableProperty] private bool _isFollowBusy;
     [ObservableProperty] private bool _isLatest = true;
@@ -386,6 +391,7 @@ public sealed partial class MainViewModel : ObservableObject
                 : "";
             CanAsk = info.Ask;
             CanAskAnon = info.AskAnon;
+            CanSubmitBlog = info.CanSubmit;
         }
         catch (Exception) { CanAsk = false; }
     }

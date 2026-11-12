@@ -82,6 +82,42 @@ public partial class MainWindow : Window
         await window.ShowDialog(this);
     }
 
+    private async void OnSubmitPost(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainViewModel vm || !vm.CanSubmitBlog) return;
+        var composer = ComposerViewModel.ForSubmission(vm.Client, vm.Headline);
+        var window = new ComposerWindow { DataContext = composer };
+        composer.Completed += (_, label) => { vm.Status = label; vm.HasStatus = true; };
+        await window.ShowDialog(this);
+    }
+
+    private async void OnEditPost(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainViewModel vm) return;
+        if ((sender as Control)?.DataContext is not PostItemViewModel item) return;
+        if (!item.IsMine) return;
+        var composer = ComposerViewModel.ForEdit(vm.Client, vm.Blogs, vm.PrimaryBlog, item);
+        var window = new ComposerWindow { DataContext = composer };
+        composer.Completed += (_, label) => { vm.Status = label; vm.HasStatus = true; };
+        await window.ShowDialog(this);
+    }
+
+    private void OnPlayMedia(object? sender, RoutedEventArgs e)
+    {
+        // Inline video/audio decoding is not wired yet; hand the media URL to the
+        // system player so the post is still usable.
+        if ((sender as Control)?.DataContext is not MediaItemViewModel media) return;
+        if (string.IsNullOrEmpty(media.Url)) return;
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(media.Url)
+            {
+                UseShellExecute = true,
+            });
+        }
+        catch (Exception) { /* no handler for this scheme */ }
+    }
+
     private void OnSearchKey(object? sender, Avalonia.Input.KeyEventArgs e)
     {
         if (e.Key != Avalonia.Input.Key.Enter) return;

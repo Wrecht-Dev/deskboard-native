@@ -39,7 +39,7 @@ Legend: ✅ working & verified live · 🟡 partial · ⏳ planned · ⛔ exclud
 | Text blocks (headings/quotes/lists) | ✅ | NPF formatting → styled runs (bold/italic/strike/underline/links), headings, quotes, bullets |
 | Photoset grids (1–4 images) | ✅ | single image or 2-col grid, lazy + cached |
 | Animated GIFs | ✅ | Skia frame decode + timer playback; verified animating (frame captures differ) |
-| Video posters / inline playback | 🟡 | poster image + play badge; inline playback pending |
+| Video / audio | 🟡 | poster + badge opens the system player; inline decode not wired |
 | Audio | ⏳ | |
 | Polls | ⏳ | |
 | Post actions (like/reblog/reply/follow/ask) | ✅ | like (optimistic), reblog dialog (3 modes), reply from permalink, follow + ask on blog pages |
@@ -55,11 +55,12 @@ Legend: ✅ working & verified live · 🟡 partial · ⏳ planned · ⛔ exclud
 | Follow / unfollow | ✅ | blog page header, optimistic with revert |
 | Reply | ✅ | from post permalink; verified UI |
 | Ask | ✅ | dialog with 500-char counter + anonymous toggle, gated on blog capability |
-| Submit post | ⏳ | |
+| Submit post | 🟡 | compose + submit to blogs with can_submit; not fired live |
 | DM send / accept / read / delete | ⏳ | |
 | Composer — text + tags | ✅ | NPF content builder, blog selector, live char counter |
 | Composer — image upload | 🟡 | multipart upload + image blocks; not fired live (creates account media) |
 | Composer — publish / queue / draft / schedule | 🟡 | all four wired; not fired live (would post publicly) |
+| Edit post | 🟡 | composer prefilled, PUT rewrite wired; not fired live |
 | Settings screen | ✅ | account + session state, blogs, appearance, about; re-import session |
 | Theme toggle (in-session) | 🟡 | command wired; persistence verified on restart; headless click unverified |
 | Notes moderation (delete/flag) | 🟡 | note menus on your own posts with confirmations; not fired live |

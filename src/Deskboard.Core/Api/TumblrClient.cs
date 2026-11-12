@@ -306,6 +306,26 @@ public sealed partial class TumblrClient : IDisposable
             form: form, ct: ct).AsVoid();
     }
 
+    /// <summary>Submit a post to a blog that accepts submissions.</summary>
+    public Task SubmitPostAsync(string blog, ComposerDraft draft, CancellationToken ct = default)
+        => CreatePostAsync(blog, draft, "submission", null, ct);
+
+    /// <summary>Edit one of your own posts (NPF rewrite).</summary>
+    public Task EditPostAsync(string blog, string postId, ComposerDraft draft, string state = "",
+        CancellationToken ct = default)
+    {
+        var form = new Dictionary<string, string?>
+        {
+            ["content"] = BuildContentJson(draft),
+            ["layout"] = JsonSerializer.Serialize(new[] { "rows" }),
+        };
+        var tags = draft.Tags.Trim();
+        if (tags.Length > 0) form["tags"] = tags;
+        if (state.Length > 0) form["state"] = state;
+        return SendWriteAsync(HttpMethod.Put, $"/v2/blog/{Uri.EscapeDataString(blog)}/posts/{postId}",
+            form: form, ct: ct).AsVoid();
+    }
+
     /// <summary>Upload an image for the composer; returns its CDN media descriptor.</summary>
     public async Task<UploadedMedia?> UploadImageAsync(string filePath, CancellationToken ct = default)
     {
