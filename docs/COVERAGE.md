@@ -76,7 +76,7 @@ Legend: ✅ working & verified live · 🟡 partial · ⏳ planned · ⛔ exclud
 | Add / unpin dialogs | ✅ |
 | Keyword filtering | ✅ live-verified (hidden banner + Show hidden) |
 | Local bookmarks | ✅ live-verified (seeded + rendered, offline) |
-| Session management | 🟡 sign-in + browser fallback; multi-account ⏳ |
+| Session management | ✅ sign in / browser fallback / sign out; multi-account ⏳ |
 
 ## 4. Tests
 
@@ -132,6 +132,9 @@ preview text, pixel-perfect typography (Favorit unavailable).
 |---|---|
 | Trending tags (live) | ✅ 10 topics, click opens tag |
 | Queue pause / resume / shuffle | ✅ wired, empty queue on account |
+| Queue reorder (move up/down) | ✅ wired via insert_after; empty queue on account |
+| Retry on error | ✅ status-bar action re-runs the current surface |
+| Sign out | ✅ clears cookies + store, asks for restart |
 | GIF library picker | ✅ live thumbnails, attaches as image block |
 | First-run welcome | ✅ screenshot-verified |
 | Update check + crash log | ✅ |

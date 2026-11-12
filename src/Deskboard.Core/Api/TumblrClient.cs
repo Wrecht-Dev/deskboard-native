@@ -132,6 +132,20 @@ public sealed partial class TumblrClient : IDisposable
         return request;
     }
 
+    /// <summary>Forget the current session (cookies + persisted store).</summary>
+    public void SignOut()
+    {
+        _cookies.Clear();
+        _sessionRefreshed = true;
+        _csrf = null;
+        try
+        {
+            var path = Path.Combine(_dataDir, "cookies.json");
+            if (File.Exists(path)) File.Delete(path);
+        }
+        catch (Exception) { }
+    }
+
     /// <summary>Re-read the session from the user's Firefox profile (cookies rotate).</summary>
     public bool RefreshSessionFromBrowser()
     {

@@ -77,6 +77,7 @@ public sealed partial class PostItemViewModel : ObservableObject
     [ObservableProperty] private string _likeGlyph = "♡";
     [ObservableProperty] private string _likeCountLabel = "";
     [ObservableProperty] private string _bookmarkGlyph = "☆";
+    [ObservableProperty] private bool _canReorder;
     public bool IsBookmarked { get; private set; }
 
     public void RefreshBookmark(bool saved)
@@ -686,6 +687,19 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
+    public async Task RetryAsync()
+    {
+        Status = "Retrying…";
+        if (IsNotificationsPage) { await LoadNotificationsAsync(); return; }
+        if (IsLibraryPage) { await LoadLibraryAsync(LibraryKind); return; }
+        if (IsBookmarksPage) { LoadBookmarks(); Subhead = $"{Bookmarks.Count} saved"; return; }
+        if (IsPinnedTab && ActivePinnedTab is { } pinned) { await OpenPinnedTabAsync(pinned); return; }
+        if (IsTagPage) { await SetTagSortAsync(IsPinnedTop ? "top" : "latest"); return; }
+        if (IsBlogPage) { await OpenBlogAsync(Headline); return; }
+        await LoadFeedAsync();
+    }
+
+    [RelayCommand]
     public async Task LoadMoreNotificationsAsync()
     {
         if (IsLoading || _notificationsNext is null) return;
@@ -983,6 +997,32 @@ public sealed partial class MainViewModel : ObservableObject
         catch (Exception ex)
         {
             Status = ex is TumblrException ? ex.Message : $"Couldn't update the queue: {ex.Message}";
+            HasStatus = true;
+        }
+    }
+
+    /// <summary>Move a queued post up (-1) or down (+1) using insert_after.</summary>
+    public async Task ReorderQueueAsync(PostItemViewModel item, int direction)
+    {
+        var index = Posts.IndexOf(item);
+        var target = index + direction;
+        if (index < 0 || target < 0 || target >= Posts.Count) return;
+
+        // insert_after names the post that should precede the moved item.
+        var insertAfter = direction < 0
+            ? (index - 2 >= 0 ? Posts[index - 2].Post.Id : "")
+            : Posts[target].Post.Id;
+
+        try
+        {
+            await _client.ReorderQueueAsync(PrimaryBlog, item.Post.Id, insertAfter);
+            Posts.Move(index, target);
+            Status = direction < 0 ? "Moved up." : "Moved down.";
+            HasStatus = true;
+        }
+        catch (Exception ex)
+        {
+            Status = ex is TumblrException ? ex.Message : $"Couldn't reorder: {ex.Message}";
             HasStatus = true;
         }
     }

@@ -82,6 +82,15 @@ public sealed partial class SettingsViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void SignOut()
+    {
+        _client.SignOut();
+        HasStatus = true;
+        Status = "Signed out. Restart Deskboard to sign in again.";
+        SessionState = "Signed out.";
+    }
+
+    [RelayCommand]
     private void ReimportSession()
     {
         var ok = _client.RefreshSessionFromBrowser();

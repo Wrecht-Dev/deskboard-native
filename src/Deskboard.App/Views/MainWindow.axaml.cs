@@ -155,6 +155,16 @@ public partial class MainWindow : Window
         if (dialog.Result is { } tab) vm.AddPinnedTab(tab);
     }
 
+    private void OnMoveUp(object? sender, RoutedEventArgs e) => Move(sender, -1);
+    private void OnMoveDown(object? sender, RoutedEventArgs e) => Move(sender, 1);
+
+    private void Move(object? sender, int direction)
+    {
+        if (DataContext is not MainViewModel vm) return;
+        if ((sender as Control)?.DataContext is PostItemViewModel item)
+            _ = vm.ReorderQueueAsync(item, direction);
+    }
+
     private void OnToggleBookmark(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not MainViewModel vm) return;

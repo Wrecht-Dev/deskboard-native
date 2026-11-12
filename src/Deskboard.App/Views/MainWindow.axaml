@@ -126,7 +126,11 @@
       </Border>
 
       <Border DockPanel.Dock="Bottom" Padding="34,10" IsVisible="{Binding HasStatus}">
-        <TextBlock Text="{Binding Status}" Classes="dim" FontSize="13" />
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Text="{Binding Status}" Classes="dim" FontSize="13" VerticalAlignment="Center" />
+          <Button Grid.Column="1" Content="Retry" FontSize="12" Padding="10,4"
+                  Command="{Binding RetryCommand}" />
+        </Grid>
       </Border>
 
       <Border DockPanel.Dock="Top" Margin="34,0,34,10" IsVisible="{Binding HasSearchMeta}">
@@ -184,7 +188,11 @@
                               Foreground="#9AA7B4" VerticalAlignment="Center">
                         <Button.Flyout>
                           <MenuFlyout>
-                            <MenuItem Header="Edit post" Click="OnEditPost"
+                            <MenuItem Header="Move up" Click="OnMoveUp"
+                                    IsVisible="{Binding CanReorder}" />
+                          <MenuItem Header="Move down" Click="OnMoveDown"
+                                    IsVisible="{Binding CanReorder}" />
+                          <MenuItem Header="Edit post" Click="OnEditPost"
                                     IsVisible="{Binding IsMine}" />
                           <MenuItem Header="Mute post" Click="OnMutePost" />
                             <MenuItem Header="Block blog" Click="OnBlockBlog" />
