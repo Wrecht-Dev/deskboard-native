@@ -31,7 +31,7 @@ public partial class ViewerWindow : Window
             return;
         }
 
-        var bitmap = await Services.ImageLoader.LoadAsync(url, 2400);
+        var bitmap = await Services.ImageLoader.LoadFullAsync(url);
         if (bitmap is null) return;
         _original = bitmap;
         await Dispatcher.UIThread.InvokeAsync(() => { Picture.Source = bitmap; ApplyZoom(); });

@@ -61,6 +61,22 @@ public static class ImageLoader
         }
     }
 
+    /// <summary>Decode at the file's natural size (viewer, no upscaling).</summary>
+    public static async Task<Bitmap?> LoadFullAsync(string url)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return null;
+        try
+        {
+            using var response = await Http.GetAsync(url).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
+            using var buffer = new MemoryStream();
+            await response.Content.CopyToAsync(buffer).ConfigureAwait(false);
+            buffer.Position = 0;
+            return new Bitmap(buffer);
+        }
+        catch (Exception) { return null; }
+    }
+
     /// <summary>Raw bytes (used by the animated GIF decoder).</summary>
     public static async Task<byte[]?> GetBytesAsync(string url)
     {
