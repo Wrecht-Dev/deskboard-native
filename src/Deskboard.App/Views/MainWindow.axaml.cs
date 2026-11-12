@@ -37,13 +37,8 @@ public partial class MainWindow : Window
 
     private void OnOpenPost(object? sender, Avalonia.Input.TappedEventArgs e)
     {
-        if (e.Source is not Control control || control.DataContext is not PostItemViewModel item) return;
-        if (DataContext is not MainViewModel vm) return;
-        var window = new PostDetailWindow
-        {
-            DataContext = new PostDetailViewModel(item, vm.Client, vm.PrimaryBlog),
-        };
-        window.Show(this);
+        if (e.Source is not Control control || control.DataContext is not PostItemViewModel) return;
+        OpenDetail(control);
     }
 
     private static PostItemViewModel? ItemFrom(object? sender)
@@ -100,6 +95,33 @@ public partial class MainWindow : Window
         var window = new ComposerWindow { DataContext = composer };
         composer.Completed += (_, label) => { vm.Status = label; vm.HasStatus = true; };
         await window.ShowDialog(this);
+    }
+
+    private void OnReplyToPost(object? sender, RoutedEventArgs e) => OpenDetail(sender);
+
+    private void OnSharePost(object? sender, RoutedEventArgs e)
+    {
+        if ((sender as Control)?.DataContext is not PostItemViewModel item) return;
+        if (string.IsNullOrEmpty(item.Post.PostUrl)) return;
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(item.Post.PostUrl)
+            {
+                UseShellExecute = true,
+            });
+        }
+        catch (Exception) { }
+    }
+
+    private void OpenDetail(object? sender)
+    {
+        if ((sender as Control)?.DataContext is not PostItemViewModel item) return;
+        if (DataContext is not MainViewModel vm) return;
+        var window = new PostDetailWindow
+        {
+            DataContext = new PostDetailViewModel(item, vm.Client, vm.PrimaryBlog),
+        };
+        window.Show(this);
     }
 
     private void OnPlayMedia(object? sender, RoutedEventArgs e)

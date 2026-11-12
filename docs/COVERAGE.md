@@ -89,3 +89,18 @@ validation.
 2. Reblog dialog, reply, follow, ask; post detail with notes.
 3. Search, notifications, messaging, inbox, drafts/queue.
 4. Composer + settings; light theme; parity pass against `docs/reference`.
+
+## Final summary
+
+**Implemented and live-verified:** shell, feeds (Home/Following/Explore/Likes),
+blog pages, tag Latest/Top, post permalink + notes, notifications, DMs
+(Inbox/Requests/threads), library pages, search APIs, composer (text/images),
+settings, light/dark themes, animated GIFs.
+
+**Implemented, unit/API-verified, not fired at the account:** likes are the only
+authorised write test; reblog, follow, reply, ask, submit, edit, DM send, mute,
+block, report, delete, notes moderation and settings writes are wired against
+verified payloads but were never executed.
+
+**Known gaps:** inline video/audio decode (system-player fallback), conversation
+preview text, pixel-perfect typography (Favorit unavailable).

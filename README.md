@@ -34,21 +34,46 @@ Full decision record: [`docs/REWRITE.md`](docs/REWRITE.md).
 
 ## What works right now
 
-- **Live feed** against Tumblr's API: Home (For you), Following, Explore, Likes, blog
-  pages and tag pages with **Latest/Top**.
-- Tumblr-faithful shell: navy left rail, centred card feed, right tag rail.
-- Post rendering: avatars, reblog provenance, text, photoset grids, tags, action row;
-  **likes work** (CSRF-authenticated, optimistic, reverting on refusal).
-- **Session auto-refresh**: when Tumblr rotates cookies, the app re-reads your
-  Firefox profile and keeps going.
-- Virtualised feed with infinite scroll; public web token discovered and cached
-  locally — **no credentials in this repo**.
+**Read**
+- Home (For you), Following, Explore, Likes, blog pages, tag pages with **Latest/Top**.
+- Search across posts, blogs and communities; notifications/Activity; direct messages
+  (Inbox + Requests, threads, send); Inbox / Drafts / Queue library.
+- Post permalink with the real notes breakdown (likes, reblogs, replies) and pagination.
 
-See [`docs/COVERAGE.md`](docs/COVERAGE.md) for the live parity matrix.
+**Write**
+- Like/unlike (optimistic, reverting), reblog with all three web modes (comment +
+  tags, post only, scheduled), follow/unfollow, reply, ask (with anonymous toggle),
+  submit to blogs that accept submissions, edit your own posts, DM send and
+  request accept, mute/block/report/delete with confirmations, notes moderation.
 
-## Screenshot
+**Composer**
+- NPF text + tags, image upload, publish / queue / draft / schedule, edit mode.
 
-![Early Avalonia scaffold rendering a live Tumblr feed](docs/screenshots/scaffold-dark.png)
+**Presentation**
+- Three-column Tumblr shell, virtualised feed with infinite scroll, photoset grids,
+  **animated GIF playback**, video/audio badges, rich text (headings, quotes, lists,
+  bold/italic/strike/links), light and dark themes.
+
+### Screenshots
+
+| Dark | Light |
+|---|---|
+| ![Home dark](docs/screenshots/home-dark.png) | ![Home light](docs/screenshots/home-light.png) |
+
+More: [post permalink](docs/screenshots/detail-dark.png), [blog page](docs/screenshots/blog-dark.png),
+[composer](docs/screenshots/composer-dark.png), [settings](docs/screenshots/settings-dark.png),
+[ask dialog](docs/screenshots/ask-dark.png), [library](docs/screenshots/library-dark.png).
+
+### Known limitations
+
+- **Inline video/audio decoding** is not wired; badges hand the media to your
+  system player instead.
+- Write actions are **wired and API/unit-tested but never fired against a real
+  account** except an authorised like/unlike test. That is deliberate.
+- Torn between fidelity and risk: no Premium/Blaze purchases, domains,
+  communities, 2FA or login recovery.
+- Visual parity is close but not pixel-identical: the web uses the proprietary
+  *Favorit* typeface, this build falls back to Inter.
 
 ## Build & run
 
