@@ -34,11 +34,17 @@ Full decision record: [`docs/REWRITE.md`](docs/REWRITE.md).
 
 ## What works right now
 
-- **Live read-only feed** against Tumblr's API: Home (For you), Following, Likes, Explore.
+- **Live feed** against Tumblr's API: Home (For you), Following, Explore, Likes, blog
+  pages and tag pages with **Latest/Top**.
 - Tumblr-faithful shell: navy left rail, centred card feed, right tag rail.
-- Post rendering: header, reblog provenance, text blocks, media, tag pills, action row.
-- Session reuse: reads the cookies the Linux PoC already imported, or `DESKBOARD_COOKIES`.
-- Public web token discovered and cached locally — **no credentials in this repo**.
+- Post rendering: avatars, reblog provenance, text, photoset grids, tags, action row;
+  **likes work** (CSRF-authenticated, optimistic, reverting on refusal).
+- **Session auto-refresh**: when Tumblr rotates cookies, the app re-reads your
+  Firefox profile and keeps going.
+- Virtualised feed with infinite scroll; public web token discovered and cached
+  locally — **no credentials in this repo**.
+
+See [`docs/COVERAGE.md`](docs/COVERAGE.md) for the live parity matrix.
 
 ## Screenshot
 

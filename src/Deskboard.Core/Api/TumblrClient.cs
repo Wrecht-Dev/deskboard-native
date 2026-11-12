@@ -32,6 +32,8 @@ public sealed partial class TumblrClient : IDisposable
 
     private readonly HttpClient _http;
     private readonly string _configDir;
+    private readonly string _dataDir;
+    private bool _sessionRefreshed;
     private string _token = "";
     private string? _csrf;
     private readonly Dictionary<string, string> _cookies;
@@ -42,6 +44,7 @@ public sealed partial class TumblrClient : IDisposable
     {
         _configDir = configDir ?? Paths.ConfigDir;
         _cookies = cookies is null ? CookieStore.LoadStore(dataDir) : new Dictionary<string, string>(cookies);
+        _dataDir = dataDir ?? Paths.DataDir;
 
         var handler = new HttpClientHandler
         {
@@ -126,8 +129,101 @@ public sealed partial class TumblrClient : IDisposable
         return request;
     }
 
-    private async Task<JsonDocument> SendAsync(HttpMethod method, string path, IDictionary<string, string?>? query = null,
-        IDictionary<string, string?>? form = null, CancellationToken ct = default)
+    /// <summary>Re-read the session from the user's Firefox profile (cookies rotate).</summary>
+    public bool RefreshSessionFromBrowser()
+    {
+        if (_sessionRefreshed) return false;
+        _sessionRefreshed = true;
+        var fresh = FirefoxCookies.ReadTumblrCookies();
+        if (fresh.Count == 0) return false;
+        _cookies.Clear();
+        foreach (var (k, v) in fresh) _cookies[k] = v;
+        CookieStore.SaveStore(_cookies, _dataDir);
+        return true;
+    }
+
+    /// <summary>Write request: carries the CSRF token and retries once when it is stale.</summary>
+    private async Task<JsonDocument> SendWriteAsync(HttpMethod method, string path,
+        IDictionary<string, string?>? query = null, IDictionary<string, string?>? form = null,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            return await SendAsync(method, path, query, form, ct).ConfigureAwait(false);
+        }
+        catch (TumblrException ex) when (ex.Status == 401 && ex.Message.Contains("1022"))
+        {
+            await CsrfTokenAsync(refresh: true, ct: ct).ConfigureAwait(false);
+            return await SendAsync(method, path, query, form, ct).ConfigureAwait(false);
+        }
+    }
+
+    // --------------------------------------------------------------- identity --
+    public async Task<(string Name, List<string> Blogs)> GetIdentityAsync(CancellationToken ct = default)
+    {
+        using var doc = await SendAsync(HttpMethod.Get, "/v2/user/info", ct: ct).ConfigureAwait(false);
+        var root = doc.RootElement;
+        var user = root.TryGetProperty("response", out var r) && r.TryGetProperty("user", out var u) ? u : root;
+        var name = user.Str("name");
+        var blogs = new List<string>();
+        if (user.TryGetProperty("blogs", out var arr) && arr.ValueKind == JsonValueKind.Array)
+            foreach (var b in arr.EnumerateArray())
+                if (b.Str("name") is { Length: > 0 } n && !blogs.Contains(n)) blogs.Add(n);
+        return (name, blogs);
+    }
+
+    // ------------------------------------------------------------ write actions --
+    private static Dictionary<string, string?> PostBody(Post post) => new()
+    {
+        ["id"] = post.Id,
+        ["reblog_key"] = post.ReblogKey,
+    };
+
+    public Task LikeAsync(Post post, CancellationToken ct = default)
+        => SendWriteAsync(HttpMethod.Post, "/v2/user/like", form: PostBody(post), ct: ct).AsVoid();
+
+    public Task UnlikeAsync(Post post, CancellationToken ct = default)
+        => SendWriteAsync(HttpMethod.Post, "/v2/user/unlike", form: PostBody(post), ct: ct).AsVoid();
+
+    public Task ReblogAsync(Post post, string blog, string comment = "", string tags = "",
+        string? publishOn = null, CancellationToken ct = default)
+    {
+        var form = PostBody(post);
+        form["comment"] = comment;
+        if (tags.Length > 0) form["tags"] = tags;
+        if (publishOn is not null) form["publish_on"] = publishOn;
+        return SendWriteAsync(HttpMethod.Post, $"/v2/blog/{Uri.EscapeDataString(blog)}/post/reblog", form: form, ct: ct).AsVoid();
+    }
+
+    public Task FollowAsync(string blog, CancellationToken ct = default)
+        => SendWriteAsync(HttpMethod.Post, "/v2/user/follow",
+            form: new Dictionary<string, string?> { ["url"] = blog }, ct: ct).AsVoid();
+
+    public Task UnfollowAsync(string blog, CancellationToken ct = default)
+        => SendWriteAsync(HttpMethod.Post, "/v2/user/unfollow",
+            form: new Dictionary<string, string?> { ["url"] = blog }, ct: ct).AsVoid();
+
+    public Task ReplyAsync(Post post, string blog, string text, CancellationToken ct = default)
+        => SendWriteAsync(HttpMethod.Post, "/v2/user/post/reply", form: new Dictionary<string, string?>
+        {
+            ["post_id"] = post.Id,
+            ["reply_text"] = text,
+            ["reblog_key"] = post.ReblogKey,
+            ["tumblelog"] = blog,
+            ["reply_as"] = blog,
+        }, ct: ct).AsVoid();
+
+    public Task SendAskAsync(string blog, string question, bool anonymous = false, CancellationToken ct = default)
+        => SendWriteAsync(HttpMethod.Post, $"/v2/blog/{Uri.EscapeDataString(blog)}/ask",
+            form: new Dictionary<string, string?>
+            {
+                ["question"] = question,
+                ["anonymous"] = anonymous ? "true" : "false",
+            }, ct: ct).AsVoid();
+
+    private async Task<JsonDocument> SendAsync(HttpMethod method, string path,
+        IDictionary<string, string?>? query = null, IDictionary<string, string?>? form = null,
+        CancellationToken ct = default)
     {
         await EnsureTokenAsync(ct).ConfigureAwait(false);
 
@@ -139,21 +235,29 @@ public sealed partial class TumblrClient : IDisposable
             url += (url.Contains('?') ? "&" : "?") + qs;
         }
 
-        HttpContent? content = null;
-        if (form is not null)
+        for (var attempt = 0; ; attempt++)
         {
-            content = new FormUrlEncodedContent(form.Where(kv => kv.Value is not null)
-                .Select(kv => new KeyValuePair<string, string>(kv.Key, kv.Value!)));
-            var csrf = await CsrfTokenAsync(ct: ct).ConfigureAwait(false);
-            if (csrf is not null) content.Headers.TryAddWithoutValidation("X-CSRF", csrf);
-        }
+            HttpContent? content = null;
+            if (form is not null)
+            {
+                content = new FormUrlEncodedContent(form.Where(kv => kv.Value is not null)
+                    .Select(kv => new KeyValuePair<string, string>(kv.Key, kv.Value!)));
+                var csrf = await CsrfTokenAsync(ct: ct).ConfigureAwait(false);
+                if (csrf is not null) content.Headers.TryAddWithoutValidation("X-CSRF", csrf);
+            }
 
-        using var request = NewRequest(method, url, content);
-        using var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
-        var body = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-        if (!response.IsSuccessStatusCode)
-            throw new TumblrException(Explain((int)response.StatusCode, body), (int)response.StatusCode);
-        return JsonDocument.Parse(string.IsNullOrWhiteSpace(body) ? "{}" : body);
+            using var request = NewRequest(method, url, content);
+            using var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
+            var body = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+                return JsonDocument.Parse(string.IsNullOrWhiteSpace(body) ? "{}" : body);
+
+            var status = (int)response.StatusCode;
+            if (status == 401 && attempt == 0 && RefreshSessionFromBrowser())
+                continue; // cookies refreshed from the browser; retry once
+
+            throw new TumblrException(Explain(status, body), status);
+        }
     }
 
     private static string Explain(int status, string body) => status switch

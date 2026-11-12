@@ -1,13 +1,22 @@
 using Deskboard.Core.Api;
-
-using var client = new TumblrClient();
-Console.WriteLine($"cookies={client.HasSession} token={(await client.EnsureTokenAsync() ? "ok" : "fail")}");
-var home = await client.GetHomeAsync(14);
-Console.WriteLine($"home: {home.Items.Count} | next={home.NextUrl is not null}");
-foreach (var p in home.Items.Take(4)) Console.WriteLine($"  {p.BlogName,-26} blocks={p.Content.Count,2} trail={p.Trail.Count,2} notes={p.NoteCount}");
-var likes = await client.GetLikesAsync(10);
-Console.WriteLine($"likes: {likes.Items.Count} | total={likes.Total}");
-var following = await client.GetFollowingAsync();
-Console.WriteLine($"following: {following.Items.Count} | next={following.NextUrl is not null}");
-var post = home.Items.FirstOrDefault(p => p.Content.Count > 0 || p.Trail.Count > 0);
-if (post is not null) Console.WriteLine($"first text: {(post.Content.FirstOrDefault()?.Text ?? post.Trail[0].Content[0].Text)[..Math.Min(80, (post.Content.FirstOrDefault()?.Text ?? "x").Length)]}");
+var client = new TumblrClient();
+await client.EnsureTokenAsync();
+var page = await client.GetHomeAsync(8);
+var post = page.Items.FirstOrDefault(p => p.BlogAvatar.Length > 0);
+var media = page.Items.SelectMany(p => p.Content).SelectMany(b => b.Media).FirstOrDefault();
+Console.WriteLine("avatar url: " + post?.BlogAvatar);
+Console.WriteLine("media url:  " + media?.Url);
+using var http = new HttpClient();
+http.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 Chrome/150");
+http.DefaultRequestHeaders.Referrer = new Uri("https://www.tumblr.com/");
+foreach (var (label, url) in new[] { ("avatar", post?.BlogAvatar ?? ""), ("media", media?.Url ?? "") })
+{
+    if (string.IsNullOrEmpty(url)) { Console.WriteLine($"{label}: none"); continue; }
+    try
+    {
+        var res = await http.GetAsync(url);
+        var bytes = await res.Content.ReadAsByteArrayAsync();
+        Console.WriteLine($"{label}: {(int)res.StatusCode} {res.Content.Headers.ContentType} {bytes.Length} bytes");
+    }
+    catch (Exception ex) { Console.WriteLine($"{label}: EX {ex.GetType().Name} {ex.Message}"); }
+}

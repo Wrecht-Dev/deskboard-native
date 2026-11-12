@@ -51,6 +51,26 @@ public static class CookieStore
         return new Dictionary<string, string>();
     }
 
+    /// <summary>Persist the current session jar for the next launch.</summary>
+    public static void SaveStore(IReadOnlyDictionary<string, string> cookies, string? dataDir = null)
+    {
+        try
+        {
+            var dir = dataDir ?? Paths.DataDir;
+            Directory.CreateDirectory(dir);
+            var path = Path.Combine(dir, "cookies.json");
+            var json = System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, object>
+            {
+                ["source"] = "firefox",
+                ["cookies"] = cookies,
+            });
+            File.WriteAllText(path, json);
+            if (!OperatingSystem.IsWindows())
+                File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+        }
+        catch (Exception) { }
+    }
+
     /// <summary>Parse a Netscape cookies.txt export, keeping tumblr.com cookies.</summary>
     public static Dictionary<string, string> LoadNetscapeFile(string path)
     {
