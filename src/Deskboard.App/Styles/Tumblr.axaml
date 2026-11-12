@@ -1,0 +1,98 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Styles.Resources>
+    <!-- Palette sampled from Tumblr's desktop web UI -->
+    <Color x:Key="RailColor">#001935</Color>
+    <Color x:Key="PageColor">#0A0A0A</Color>
+    <Color x:Key="CardColor">#161616</Color>
+    <Color x:Key="CardHoverColor">#1D1D1D</Color>
+    <SolidColorBrush x:Key="RailBrush" Color="{StaticResource RailColor}" />
+    <SolidColorBrush x:Key="PageBrush" Color="{StaticResource PageColor}" />
+    <SolidColorBrush x:Key="CardBrush" Color="{StaticResource CardColor}" />
+    <SolidColorBrush x:Key="AccentBrush" Color="#00B8FF" />
+    <SolidColorBrush x:Key="TextBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="DimBrush" Color="#8C9AA8" />
+    <SolidColorBrush x:Key="TagBrush" Color="#7CC4FF" />
+    <SolidColorBrush x:Key="HairlineBrush" Color="#232323" />
+  </Styles.Resources>
+
+  <Style Selector="Window">
+    <Setter Property="Background" Value="{StaticResource PageBrush}" />
+    <Setter Property="FontFamily" Value="Inter, Favorit, Helvetica Neue, Arial" />
+  </Style>
+
+  <Style Selector="TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="TextBlock.dim">
+    <Setter Property="Foreground" Value="{StaticResource DimBrush}" />
+  </Style>
+  <Style Selector="TextBlock.tag">
+    <Setter Property="Foreground" Value="{StaticResource TagBrush}" />
+  </Style>
+  <Style Selector="TextBlock.title">
+    <Setter Property="FontSize" Value="24" />
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+  <Style Selector="TextBlock.heading">
+    <Setter Property="FontSize" Value="19" />
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+
+  <!-- Rail navigation -->
+  <Style Selector="ListBox.nav">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Padding" Value="8,4" />
+  </Style>
+  <Style Selector="ListBox.nav ListBoxItem">
+    <Setter Property="Padding" Value="12,9" />
+    <Setter Property="Margin" Value="4,1" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Foreground" Value="#BFD3E6" />
+    <Setter Property="FontSize" Value="15" />
+  </Style>
+  <Style Selector="ListBox.nav ListBoxItem:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="#0A2B4A" />
+  </Style>
+  <Style Selector="ListBox.nav ListBoxItem:selected /template/ ContentPresenter">
+    <Setter Property="Background" Value="#083A5E" />
+  </Style>
+
+  <!-- Feed rows -->
+  <Style Selector="ListBox.feed">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Padding" Value="0" />
+  </Style>
+  <Style Selector="ListBox.feed ListBoxItem">
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Margin" Value="0,0,0,14" />
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="ListBox.feed ListBoxItem:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="ListBox.feed ListBoxItem:selected /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+
+  <Style Selector="Border.card">
+    <Setter Property="Background" Value="{StaticResource CardBrush}" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="18" />
+  </Style>
+  <Style Selector="Button.chip">
+    <Setter Property="Background" Value="#232323" />
+    <Setter Property="Foreground" Value="{StaticResource TagBrush}" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="Padding" Value="10,4" />
+    <Setter Property="FontSize" Value="13" />
+  </Style>
+  <Style Selector="Button.accent">
+    <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+    <Setter Property="Foreground" Value="#001935" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Padding" Value="14,7" />
+  </Style>
+</Styles>

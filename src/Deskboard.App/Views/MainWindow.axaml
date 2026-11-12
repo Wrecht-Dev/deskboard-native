@@ -1,0 +1,148 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Deskboard.App.ViewModels"
+        x:Class="Deskboard.App.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="Deskboard — Tumblr"
+        Width="1400" Height="920"
+        MinWidth="900" MinHeight="620"
+        Background="{StaticResource PageBrush}">
+
+  <Grid ColumnDefinitions="232,*,324">
+
+    <!-- ============================================= left rail -->
+    <Border Grid.Column="0" Background="{StaticResource RailBrush}">
+      <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="0,20,0,16">
+        <TextBlock Grid.Row="0" Text="tumblr" FontSize="30" FontWeight="Black"
+                   Foreground="White" Margin="28,0,0,18" />
+
+        <ListBox Grid.Row="1" Classes="nav"
+                 ItemsSource="{Binding Feeds}"
+                 SelectedItem="{Binding SelectedFeed}">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:FeedOption">
+              <StackPanel Orientation="Horizontal" Spacing="12">
+                <TextBlock Text="●" FontSize="11" Foreground="#4C7FA8" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Label}" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+
+        <StackPanel Grid.Row="3" Spacing="12" Margin="20,0">
+          <Button Classes="accent" Content="Create" HorizontalAlignment="Stretch" />
+          <TextBlock Text="proof of concept build" Classes="dim" FontSize="11" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- ============================================= center feed -->
+    <DockPanel Grid.Column="1" Margin="0,0,0,0">
+      <Border DockPanel.Dock="Top" Padding="34,22,34,14">
+        <StackPanel Spacing="2">
+          <TextBlock Text="{Binding Headline}" Classes="title" />
+          <TextBlock Text="{Binding Subhead}" Classes="dim" FontSize="13" />
+        </StackPanel>
+      </Border>
+
+      <Border DockPanel.Dock="Bottom" Padding="34,10" IsVisible="{Binding HasStatus}">
+        <TextBlock Text="{Binding Status}" Classes="dim" FontSize="13" />
+      </Border>
+
+      <ScrollViewer Padding="34,0,34,24" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="14" MaxWidth="640" HorizontalAlignment="Center">
+          <ItemsControl ItemsSource="{Binding Posts}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:PostItemViewModel">
+                <Border Classes="card" Margin="0,0,0,14">
+                  <StackPanel Spacing="10">
+
+                    <!-- header -->
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                      <Border Width="40" Height="40" CornerRadius="20" ClipToBounds="True"
+                              Background="#25323D" VerticalAlignment="Top">
+                        <Image Source="{Binding Avatar}" Stretch="UniformToFill" />
+                      </Border>
+                      <StackPanel Grid.Column="1" Margin="10,0,0,0" Spacing="1">
+                        <TextBlock Text="{Binding BlogName}" FontWeight="SemiBold" FontSize="15" />
+                        <TextBlock Text="{Binding Handle}" Classes="dim" FontSize="12" />
+                      </StackPanel>
+                      <StackPanel Grid.Column="2" HorizontalAlignment="Right" Spacing="1">
+                        <TextBlock Text="{Binding TimeAgo}" Classes="dim" FontSize="12"
+                                   HorizontalAlignment="Right" />
+                        <TextBlock Text="⋯" Classes="dim" FontSize="16" HorizontalAlignment="Right" />
+                      </StackPanel>
+                    </Grid>
+
+                    <!-- reblog provenance -->
+                    <TextBlock Text="{Binding RebloggedFrom}" Classes="dim" FontSize="12"
+                               IsVisible="{Binding HasReblogLabel}" />
+
+                    <!-- body -->
+                    <TextBlock Text="{Binding BodyText}" IsVisible="{Binding HasBody}"
+                               LineHeight="22" FontSize="15" />
+
+                    <!-- media -->
+                    <Border IsVisible="{Binding HasImage}" CornerRadius="8" ClipToBounds="True"
+                            Background="#0F0F0F">
+                      <Image Source="{Binding Hero}" Stretch="Uniform"
+                             MaxHeight="{Binding ImageHeight}" />
+                    </Border>
+
+                    <!-- tags -->
+                    <TextBlock Text="{Binding TagsText}" Classes="tag" FontSize="13"
+                               IsVisible="{Binding HasTags}" />
+
+                    <!-- footer -->
+                    <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" Margin="0,4,0,0">
+                      <TextBlock Text="♡" FontSize="17" Foreground="#9AA7B4" />
+                      <TextBlock Grid.Column="1" Text="{Binding LikeLabel}" Classes="dim"
+                                 FontSize="13" Margin="4,0,18,0" />
+                      <TextBlock Grid.Column="2" Text="⇄" FontSize="15" Foreground="#9AA7B4" />
+                      <TextBlock Grid.Column="3" Text="{Binding ReblogLabel}" Classes="dim"
+                                 FontSize="13" Margin="4,0,0,0" />
+                      <TextBlock Grid.Column="4" Text="{Binding NotesLabel}" Classes="dim"
+                                 FontSize="13" HorizontalAlignment="Right" />
+                    </Grid>
+
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <Button Content="Load more" HorizontalAlignment="Center" Margin="0,4,0,20"
+                  Command="{Binding LoadMoreCommand}" />
+        </StackPanel>
+      </ScrollViewer>
+    </DockPanel>
+
+    <!-- ============================================= right rail -->
+    <Border Grid.Column="2" Background="{StaticResource RailBrush}" Padding="22,22,22,22">
+      <StackPanel Spacing="16">
+        <Border Classes="card" Padding="18">
+          <StackPanel Spacing="10">
+            <TextBlock Text="#art" FontSize="26" FontWeight="Bold" />
+            <TextBlock Text="Art is different for everyone, but what stays universal is versatility, beauty, and a fearlessness to try something new"
+                       Classes="dim" FontSize="13" />
+            <TextBlock Text="39M followers / 8.1K recent posts" Classes="dim" FontSize="12" />
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+              <Button Grid.Column="0" Classes="accent" Content="Follow" HorizontalAlignment="Stretch" />
+              <Button Grid.Column="1" Content="New post" HorizontalAlignment="Stretch" />
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <WrapPanel Orientation="Horizontal">
+          <Button Classes="chip" Content="#art" Margin="0,0,6,6" />
+          <Button Classes="chip" Content="#photography" Margin="0,0,6,6" />
+          <Button Classes="chip" Content="#design" Margin="0,0,6,6" />
+          <Button Classes="chip" Content="#typography" Margin="0,0,6,6" />
+        </WrapPanel>
+
+        <TextBlock Text="This rewrite is an early scaffold: read-only feed, Avalonia + .NET."
+                   Classes="dim" FontSize="11" TextWrapping="Wrap" />
+      </StackPanel>
+    </Border>
+  </Grid>
+</Window>
