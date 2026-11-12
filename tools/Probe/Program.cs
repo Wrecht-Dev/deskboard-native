@@ -1,9 +1,11 @@
 using Deskboard.Core.Api;
 var client = new TumblrClient();
 await client.EnsureTokenAsync();
-var page = await client.GetHomeAsync(14);
-var video = page.Items.SelectMany(p => p.Content).SelectMany(b => b.Media).FirstOrDefault(m => m.Kind == "video");
-Console.WriteLine(video is null ? "no video in home" : video.Url);
-var tagged = await client.GetTaggedAsync("video", "top", 10);
-var v2 = tagged.Items.SelectMany(p => p.Content).SelectMany(b => b.Media).FirstOrDefault(m => m.Kind == "video");
-Console.WriteLine(v2 is null ? "no video in tag" : v2.Url);
+var (name, blogs) = await client.GetIdentityAsync();
+var blog = blogs.FirstOrDefault() ?? name;
+var blogSettings = await client.GetBlogSettingsAsync(blog);
+Console.WriteLine($"blog settings: {blogSettings.Count} keys -> {string.Join(", ", blogSettings.Keys.Take(6))}");
+var userSettings = await client.GetUserSettingsAsync();
+Console.WriteLine($"user settings: {userSettings.Count} keys -> {string.Join(", ", userSettings.Keys.Take(6))}");
+var mentions = await client.MentionSuggestionsAsync("art");
+Console.WriteLine($"mentions for 'art': {mentions.Count} -> {string.Join(", ", mentions.Take(4))}");

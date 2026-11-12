@@ -78,6 +78,7 @@ public sealed partial class PostItemViewModel : ObservableObject
     [ObservableProperty] private string _likeCountLabel = "";
     [ObservableProperty] private string _bookmarkGlyph = "☆";
     [ObservableProperty] private bool _canReorder;
+    [ObservableProperty] private bool _canPublishDraft;
     public bool IsBookmarked { get; private set; }
 
     public void RefreshBookmark(bool saved)
@@ -1085,6 +1086,22 @@ public sealed partial class MainViewModel : ObservableObject
             Status = ex is TumblrException ? ex.Message : $"Couldn't load {LibraryLabel.ToLowerInvariant()}: {ex.Message}";
         }
         finally { IsLoading = false; }
+    }
+
+    public async Task PublishDraftAsync(PostItemViewModel item)
+    {
+        try
+        {
+            await _client.SetPostStateAsync(item.Post.BlogName, item.Post.Id, "published");
+            Posts.Remove(item);
+            Status = "Draft published.";
+            HasStatus = true;
+        }
+        catch (Exception ex)
+        {
+            Status = ex is TumblrException ? ex.Message : $"Couldn't publish: {ex.Message}";
+            HasStatus = true;
+        }
     }
 
     public async Task DeletePostAsync(PostItemViewModel item)

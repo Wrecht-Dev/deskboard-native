@@ -460,7 +460,7 @@ public sealed partial class TumblrClient : IDisposable
         {
             Headers = { ContentType = new MediaTypeHeaderValue(mime) },
         };
-        form.Add(file, "file", Path.GetFileName(filePath));
+        form.Add(file, "image", Path.GetFileName(filePath));
 
         await EnsureTokenAsync(ct).ConfigureAwait(false);
         var csrf = await CsrfTokenAsync(ct: ct).ConfigureAwait(false);
@@ -488,6 +488,92 @@ public sealed partial class TumblrClient : IDisposable
             Height = (int)mediaEl.Num("height"),
         };
     }
+
+    /// <summary>Upload audio for the composer (field name is "audio").</summary>
+    public async Task<UploadedMedia?> UploadAudioAsync(string filePath, CancellationToken ct = default)
+    {
+        var bytes = await File.ReadAllBytesAsync(filePath, ct).ConfigureAwait(false);
+        using var form = new MultipartFormDataContent();
+        var file = new ByteArrayContent(bytes)
+        {
+            Headers = { ContentType = new MediaTypeHeaderValue("audio/mpeg") },
+        };
+        form.Add(file, "audio", Path.GetFileName(filePath));
+        await EnsureTokenAsync(ct).ConfigureAwait(false);
+        var csrf = await CsrfTokenAsync(ct: ct).ConfigureAwait(false);
+        using var request = NewRequest(HttpMethod.Post, ApiBase + "/v2/media/audio", form);
+        if (csrf is not null) request.Headers.TryAddWithoutValidation("X-CSRF", csrf);
+        using var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
+        var body = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode)
+            throw new TumblrException(Explain((int)response.StatusCode, body), (int)response.StatusCode);
+        using var doc = JsonDocument.Parse(body);
+        var root = doc.RootElement.TryGetProperty("response", out var r) ? r : doc.RootElement;
+        if (root.ValueKind == JsonValueKind.Object && root.TryGetProperty("media", out var media) &&
+            media.ValueKind == JsonValueKind.Object)
+            root = media;
+        return new UploadedMedia
+        {
+            Url = root.Str("url"),
+            MimeType = root.Str("type") is { Length: > 0 } t ? t : "audio/mpeg",
+        };
+    }
+
+    /// <summary>Read blog settings (flattened to scalar keys for display).</summary>
+    public async Task<Dictionary<string, string>> GetBlogSettingsAsync(string blog, CancellationToken ct = default)
+    {
+        using var doc = await SendAsync(HttpMethod.Get,
+            $"/v2/blog/{Uri.EscapeDataString(blog)}/settings", ct: ct).ConfigureAwait(false);
+        return FlattenSettings(doc.RootElement);
+    }
+
+    /// <summary>Read account settings.</summary>
+    public async Task<Dictionary<string, string>> GetUserSettingsAsync(CancellationToken ct = default)
+    {
+        using var doc = await SendAsync(HttpMethod.Get, "/v2/user/settings", ct: ct).ConfigureAwait(false);
+        return FlattenSettings(doc.RootElement);
+    }
+
+    private static Dictionary<string, string> FlattenSettings(JsonElement root)
+    {
+        var result = new Dictionary<string, string>();
+        var response = root.TryGetProperty("response", out var r) ? r : root;
+        if (response.ValueKind != JsonValueKind.Object) return result;
+        foreach (var property in response.EnumerateObject())
+        {
+            if (property.Value.ValueKind is JsonValueKind.Object or JsonValueKind.Array) continue;
+            result[property.Name] = property.Value.ValueKind == JsonValueKind.String
+                ? property.Value.GetString() ?? ""
+                : property.Value.GetRawText();
+        }
+        return result;
+    }
+
+    /// <summary>@mention autocomplete for the composer.</summary>
+    public async Task<List<string>> MentionSuggestionsAsync(string prefix, CancellationToken ct = default)
+    {
+        var clean = new string((prefix ?? "").Where(char.IsLetterOrDigit).ToArray());
+        var path = clean.Length > 0 ? $"/v2/mention/{Uri.EscapeDataString(clean)}" : "/v2/mention";
+        using var doc = await SendAsync(HttpMethod.Get, path, ct: ct).ConfigureAwait(false);
+        var names = new List<string>();
+        var root = doc.RootElement.TryGetProperty("response", out var r) ? r : doc.RootElement;
+        if (root.TryGetProperty("blogs", out var blogs) && blogs.ValueKind == JsonValueKind.Array)
+            foreach (var blog in blogs.EnumerateArray())
+                if (blog.Str("name") is { Length: > 0 } name && !names.Contains(name)) names.Add(name);
+        return names;
+    }
+
+    /// <summary>Quick state change (publish a draft, move to draft, …).</summary>
+    public Task SetPostStateAsync(string blog, string postId, string state, CancellationToken ct = default)
+        => SendWriteAsync(HttpMethod.Post, $"/v2/blog/{Uri.EscapeDataString(blog)}/post/edit",
+            form: new Dictionary<string, string?> { ["id"] = postId, ["state"] = state }, ct: ct).AsVoid();
+
+    public Task DeleteSubmissionAsync(string blog, CancellationToken ct = default)
+        => SendWriteAsync(HttpMethod.Delete, $"/v2/blog/{Uri.EscapeDataString(blog)}/posts/submission",
+            ct: ct).AsVoid();
+
+    public Task DeleteInboxAsync(CancellationToken ct = default)
+        => SendWriteAsync(HttpMethod.Delete, "/v2/user/inbox", ct: ct).AsVoid();
 
     /// <summary>Blog drafts / queue / inbox submissions.</summary>
     public Task<Paged<Post>> GetDraftsAsync(string blog, int limit = 20, CancellationToken ct = default)

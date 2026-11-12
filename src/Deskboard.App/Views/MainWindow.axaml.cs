@@ -163,6 +163,12 @@ public partial class MainWindow : Window
         _ = ViewerWindow.ShowAsync(this, media.Url, media.IsGif);
     }
 
+    private void OnPublishDraft(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainViewModel vm) return;
+        if ((sender as Control)?.DataContext is PostItemViewModel item) _ = vm.PublishDraftAsync(item);
+    }
+
     private void OnMoveUp(object? sender, RoutedEventArgs e) => Move(sender, -1);
     private void OnMoveDown(object? sender, RoutedEventArgs e) => Move(sender, 1);
 

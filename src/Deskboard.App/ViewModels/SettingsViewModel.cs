@@ -15,6 +15,7 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     public ObservableCollection<string> Blogs { get; } = new();
     public ObservableCollection<string> MutedWords { get; } = new();
+    public ObservableCollection<string> ServerSettings { get; } = new();
     public FeedFilter Filters { get; }
 
     [ObservableProperty] private string _identity = "";
@@ -83,6 +84,28 @@ public sealed partial class SettingsViewModel : ObservableObject
         AppSettings.Theme = light ? "light" : "dark";
         if (Avalonia.Application.Current is { } app)
             app.RequestedThemeVariant = light ? Avalonia.Styling.ThemeVariant.Light : Avalonia.Styling.ThemeVariant.Dark;
+    }
+
+    [RelayCommand]
+    private async System.Threading.Tasks.Task LoadServerSettings()
+    {
+        HasStatus = true;
+        Status = "Loading account settings…";
+        try
+        {
+            ServerSettings.Clear();
+            var blogSettings = await _client.GetBlogSettingsAsync(Blogs.FirstOrDefault() ?? "");
+            foreach (var (key, value) in blogSettings.Take(20))
+                ServerSettings.Add($"blog · {key}: {value}");
+            var userSettings = await _client.GetUserSettingsAsync();
+            foreach (var (key, value) in userSettings.Take(20))
+                ServerSettings.Add($"account · {key}: {value}");
+            Status = $"Loaded {ServerSettings.Count} settings from Tumblr.";
+        }
+        catch (System.Exception ex)
+        {
+            Status = ex is TumblrException ? ex.Message : $"Couldn't load settings: {ex.Message}";
+        }
     }
 
     [RelayCommand]

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.4 — Beta
+
+- Blog and account settings read + display.
+- @mention autocomplete endpoint.
+- Audio upload endpoint.
+- Draft publish-now and delete actions.
+
 ## 0.2.3 — Beta
 
 - Hide-mature-posts toggle (Tumblr isAdult flag; best-effort).

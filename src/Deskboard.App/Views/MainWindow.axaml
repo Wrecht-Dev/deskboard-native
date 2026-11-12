@@ -188,7 +188,9 @@
                               Foreground="#9AA7B4" VerticalAlignment="Center">
                         <Button.Flyout>
                           <MenuFlyout>
-                            <MenuItem Header="Move up" Click="OnMoveUp"
+                            <MenuItem Header="Publish now" Click="OnPublishDraft"
+                                    IsVisible="{Binding CanPublishDraft}" />
+                          <MenuItem Header="Move up" Click="OnMoveUp"
                                     IsVisible="{Binding CanReorder}" />
                           <MenuItem Header="Move down" Click="OnMoveDown"
                                     IsVisible="{Binding CanReorder}" />
@@ -198,7 +200,10 @@
                             <MenuItem Header="Block blog" Click="OnBlockBlog" />
                             <MenuItem Header="Report post" Click="OnReportPost" />
                             <Separator />
-                            <MenuItem Header="Delete post" Click="OnDeletePost" />
+                            <MenuItem Header="Delete post" Click="OnDeletePost"
+                                    IsVisible="{Binding !CanPublishDraft}" />
+                          <MenuItem Header="Delete draft" Click="OnDeletePost"
+                                    IsVisible="{Binding CanPublishDraft}" />
                           </MenuFlyout>
                         </Button.Flyout>
                       </Button>

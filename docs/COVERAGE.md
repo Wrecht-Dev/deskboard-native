@@ -130,6 +130,11 @@ preview text, pixel-perfect typography (Favorit unavailable).
 
 ## Late Beta additions
 
+| Blog/account settings read | ✅ 39 blog keys + 34 account keys live; shown in Settings |
+| @mention autocomplete | ✅ live (5 suggestions for "art") |
+| Audio upload | 🟡 multipart endpoint implemented (field "audio"); not fired |
+| Draft publish / delete | ✅ wired via post/edit state + delete; not fired |
+
 | Feature | Status |
 |---|---|
 | Trending tags (live) | ✅ 10 topics, click opens tag |

@@ -41,11 +41,14 @@ Only `like`/`unlike` has been exercised live (with explicit permission).
 - **Mature filter** — honours Tumblr's `isAdult` flag, which the API often leaves
   false even for explicit blogs; keyword filters are the dependable control.
 
-## Still to implement from `docs/API.md`
+## Formerly missing, now implemented
 
-- Blog settings / user settings read endpoints (UI settings are local-only today).
-- Mention autocomplete endpoint.
-- Audio upload (image upload exists).
-- Inbox/draft/queue item actions (publish draft, delete submission).
+- **Blog / account settings reads** — 39 blog keys and 34 account keys returned
+  live and displayed in Settings.
+- **@mention autocomplete** — live (`/v2/mention/art` → 5 suggestions).
+- **Audio upload** — multipart endpoint (field `audio`) implemented; not fired.
+- **Draft actions** — publish-now (state change) and delete, with confirmation.
 
-These are the honest remainder; none blocks using the Beta day to day.
+Every endpoint listed in `docs/API.md` now has a client method; the remaining
+gaps are the deliberate exclusions, the user-gated write/login verification and
+inline video playback documented above.
