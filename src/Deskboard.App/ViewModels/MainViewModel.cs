@@ -230,10 +230,52 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _identity = "";
     [ObservableProperty] private bool _hasMore;
 
+    private readonly bool _demoMode;
+
     public MainViewModel()
     {
+        _demoMode = Environment.GetEnvironmentVariable("DESKBOARD_DEMO") == "1";
         SelectedFeed = Feeds[0];
+        if (_demoMode)
+        {
+            LoadDemoData();
+            return;
+        }
         _ = InitializeAsync();
+    }
+
+    /// <summary>
+    /// Demo mode: synthetic posts so screenshots and UI work never expose a real
+    /// account's content. Enabled with DESKBOARD_DEMO=1.
+    /// </summary>
+    private void LoadDemoData()
+    {
+        Identity = "demo";
+        Headline = "Home";
+        Subhead = "Home · demo data";
+        Blogs.Add("demo");
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var samples = new (string Blog, string Text, string Tags, int Notes)[]
+        {
+            ("deskboard", "Welcome to Deskboard Native — a native, cross-platform Tumblr client built with .NET and Avalonia. This feed is running on synthetic demo data.", "deskboard, avalonia, dotnet", 128),
+            ("deskboard", "The feed is virtualised: only the cards you can see are built, and the next page loads before you reach the bottom.", "performance, desktop", 64),
+            ("deskboard", "Everything here is rendered natively: rich text, photosets, animated GIFs, and both light and dark themes. No webview involved.", "native, gtk4, csharp", 42),
+        };
+        foreach (var (blog, text, tags, notes) in samples)
+        {
+            var post = new Post
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                BlogName = blog,
+                BlogTitle = "Deskboard",
+                NoteCount = notes,
+                ReblogCount = notes / 4,
+                Timestamp = now,
+                Tags = tags.Split(", ").ToList(),
+                Content = new List<Block> { new() { Type = "text", Text = text } },
+            };
+            Posts.Add(new PostItemViewModel(post, this));
+        }
     }
 
     public async Task InitializeAsync()
@@ -265,6 +307,11 @@ public sealed partial class MainViewModel : ObservableObject
     partial void OnSelectedFeedChanged(FeedOption? value)
     {
         if (value is null || IsTagPage) return;
+        if (_demoMode)
+        {
+            Headline = value.Label;
+            return;
+        }
         _blog = "";
         Headline = value.Label;
         CanGoBack = false;

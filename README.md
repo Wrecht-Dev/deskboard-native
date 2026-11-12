@@ -60,9 +60,8 @@ Full decision record: [`docs/REWRITE.md`](docs/REWRITE.md).
 |---|---|
 | ![Home dark](docs/screenshots/home-dark.png) | ![Home light](docs/screenshots/home-light.png) |
 
-More: [post permalink](docs/screenshots/detail-dark.png), [blog page](docs/screenshots/blog-dark.png),
-[composer](docs/screenshots/composer-dark.png), [settings](docs/screenshots/settings-dark.png),
-[ask dialog](docs/screenshots/ask-dark.png), [library](docs/screenshots/library-dark.png).
+Both screenshots use **synthetic demo data** (`DESKBOARD_DEMO=1`) — no real
+account content appears anywhere in this repository.
 
 ### Known limitations
 

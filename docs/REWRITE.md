@@ -22,9 +22,9 @@ macOS, and it keeps the API core in a testable, UI-free assembly.
 
 ## 2. Design reference (captured from the real Tumblr desktop UI)
 
-Screenshots in [`reference/`](reference/) were captured from tumblr.com at
-1440×1000 in the signed-in web client: `tagged.png`, `tagged_top.png`,
-`blog.png`, `explore.png`, `search.png`.
+The design reference was captured from tumblr.com at 1440×1000 and reduced to the
+tokens below (the captures themselves are not committed, since they were taken in
+a signed-in session and could include personal content).
 
 ### Tokens sampled from the live site
 
