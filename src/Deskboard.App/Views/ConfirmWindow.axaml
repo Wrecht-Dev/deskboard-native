@@ -3,7 +3,7 @@
         x:Class="Deskboard.App.Views.ConfirmWindow"
         Title="Confirm" Width="420" Height="180"
         WindowStartupLocation="CenterOwner"
-        Background="{StaticResource PageBrush}">
+        Background="{DynamicResource PageBrush}">
   <StackPanel Margin="22" Spacing="16">
     <TextBlock Name="MessageText" TextWrapping="Wrap" FontSize="14" />
     <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">

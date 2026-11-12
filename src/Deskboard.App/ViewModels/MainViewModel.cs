@@ -238,14 +238,21 @@ public sealed partial class MainViewModel : ObservableObject
             Status = "Couldn't reach Tumblr — check your connection.";
             return;
         }
-        try
+        for (var attempt = 0; attempt < 2 && Identity.Length == 0; attempt++)
         {
-            var (name, blogs) = await _client.GetIdentityAsync();
-            _blog = blogs.FirstOrDefault() ?? name;
-            Identity = name;
-            foreach (var blog in blogs) Blogs.Add(blog);
+            try
+            {
+                var (name, blogs) = await _client.GetIdentityAsync();
+                _blog = blogs.FirstOrDefault() ?? name;
+                Identity = name;
+                Blogs.Clear();
+                foreach (var blog in blogs) Blogs.Add(blog);
+            }
+            catch (Exception)
+            {
+                if (attempt == 0) await Task.Delay(600);
+            }
         }
-        catch (Exception) { _blog = ""; }
         await LoadFeedAsync();
     }
 
@@ -668,6 +675,20 @@ public sealed partial class MainViewModel : ObservableObject
             Status = ex is TumblrException ? ex.Message : $"Couldn't report: {ex.Message}";
             HasStatus = true;
         }
+    }
+
+    public async Task EnsureIdentityAsync()
+    {
+        if (Identity.Length > 0 && Blogs.Count > 0) return;
+        try
+        {
+            var (name, blogs) = await _client.GetIdentityAsync();
+            _blog = blogs.FirstOrDefault() ?? name;
+            Identity = name;
+            Blogs.Clear();
+            foreach (var blog in blogs) Blogs.Add(blog);
+        }
+        catch (Exception) { }
     }
 
     public async Task ToggleLikeAsync(PostItemViewModel item)

@@ -5,7 +5,7 @@
         x:DataType="vm:ReblogViewModel"
         Title="Reblog" Width="520" Height="520"
         WindowStartupLocation="CenterOwner"
-        Background="{StaticResource PageBrush}">
+        Background="{DynamicResource PageBrush}">
   <DockPanel Margin="22">
     <TextBlock DockPanel.Dock="Top" Text="{Binding Title}" Classes="heading" Margin="0,0,0,16" />
 

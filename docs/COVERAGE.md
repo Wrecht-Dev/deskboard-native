@@ -15,7 +15,7 @@ Legend: ✅ working & verified live · 🟡 partial · ⏳ planned · ⛔ exclud
 | Session auto-refresh (rotated cookies) | ✅ | re-reads Firefox `cookies.sqlite`, persists `0600` |
 | Public token discovery + cache | ✅ | no credentials in repo |
 | Dark theme | ✅ | sampled from live site |
-| Light theme | ⏳ | tokens known; toggle pending |
+| Light theme | ✅ | theme dictionaries; verified by screenshot (white rail/cards, dark text) |
 | Blog pages | ✅ | posts, follower count, Follow/Following, Ask |
 | Tag pages (Latest / Top) | ✅ | `/v2/hubs/{tag}/timeline[?sort=top]` with toggle |
 | Post permalink + notes | ✅ | notes with totals (likes/reblogs/replies), pagination, reply composer |
@@ -60,7 +60,9 @@ Legend: ✅ working & verified live · 🟡 partial · ⏳ planned · ⛔ exclud
 | Composer — text + tags | ✅ | NPF content builder, blog selector, live char counter |
 | Composer — image upload | 🟡 | multipart upload + image blocks; not fired live (creates account media) |
 | Composer — publish / queue / draft / schedule | 🟡 | all four wired; not fired live (would post publicly) |
-| Settings writes / notes moderation | ⏳ | |
+| Settings screen | ✅ | account + session state, blogs, appearance, about; re-import session |
+| Theme toggle (in-session) | 🟡 | command wired; persistence verified on restart; headless click unverified |
+| Notes moderation (delete/flag) | ⏳ | |
 
 ## 4. Tests
 

@@ -5,7 +5,7 @@
         x:DataType="vm:AskViewModel"
         Title="Ask" Width="520" Height="400"
         WindowStartupLocation="CenterOwner"
-        Background="{StaticResource PageBrush}">
+        Background="{DynamicResource PageBrush}">
   <StackPanel Margin="22" Spacing="12">
     <TextBlock Text="{Binding Title}" Classes="heading" />
     <TextBlock Text="Your question" Classes="dim" FontSize="12" />

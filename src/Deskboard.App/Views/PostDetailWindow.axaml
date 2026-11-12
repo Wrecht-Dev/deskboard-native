@@ -6,9 +6,9 @@
         x:DataType="vm:PostDetailViewModel"
         Title="Post" Width="760" Height="860"
         WindowStartupLocation="CenterOwner"
-        Background="{StaticResource PageBrush}">
+        Background="{DynamicResource PageBrush}">
   <DockPanel>
-    <Border DockPanel.Dock="Top" Background="{StaticResource RailBrush}" Padding="18,12">
+    <Border DockPanel.Dock="Top" Background="{DynamicResource RailBrush}" Padding="18,12">
       <Grid ColumnDefinitions="*,Auto">
         <StackPanel Spacing="1">
           <TextBlock Text="{Binding Item.BlogName}" FontWeight="Bold" FontSize="16" />
@@ -18,7 +18,7 @@
       </Grid>
     </Border>
 
-    <Border DockPanel.Dock="Bottom" Padding="18,12" Background="{StaticResource RailBrush}"
+    <Border DockPanel.Dock="Bottom" Padding="18,12" Background="{DynamicResource RailBrush}"
             IsVisible="{Binding CanReply}">
       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
         <TextBox Grid.Column="0" Text="{Binding ReplyText}" Watermark="Reply to this post…"

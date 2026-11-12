@@ -1,35 +1,52 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <Styles.Resources>
-    <!-- Palette sampled from Tumblr's desktop web UI -->
-    <Color x:Key="RailColor">#001935</Color>
-    <Color x:Key="PageColor">#0A0A0A</Color>
-    <Color x:Key="CardColor">#161616</Color>
-    <Color x:Key="CardHoverColor">#1D1D1D</Color>
-    <SolidColorBrush x:Key="RailBrush" Color="{StaticResource RailColor}" />
-    <SolidColorBrush x:Key="PageBrush" Color="{StaticResource PageColor}" />
-    <SolidColorBrush x:Key="CardBrush" Color="{StaticResource CardColor}" />
-    <SolidColorBrush x:Key="AccentBrush" Color="#00B8FF" />
-    <SolidColorBrush x:Key="TextBrush" Color="#FFFFFF" />
-    <SolidColorBrush x:Key="DimBrush" Color="#8C9AA8" />
-    <SolidColorBrush x:Key="TagBrush" Color="#7CC4FF" />
-    <SolidColorBrush x:Key="HairlineBrush" Color="#232323" />
+    <ResourceDictionary>
+      <ResourceDictionary.ThemeDictionaries>
+        <!-- Dark: sampled from Tumblr's desktop web UI -->
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="RailBrush" Color="#001935" />
+          <SolidColorBrush x:Key="PageBrush" Color="#0A0A0A" />
+          <SolidColorBrush x:Key="CardBrush" Color="#161616" />
+          <SolidColorBrush x:Key="CardHoverBrush" Color="#1D1D1D" />
+          <SolidColorBrush x:Key="AccentBrush" Color="#00B8FF" />
+          <SolidColorBrush x:Key="AccentTextBrush" Color="#001935" />
+          <SolidColorBrush x:Key="TextBrush" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="DimBrush" Color="#8C9AA8" />
+          <SolidColorBrush x:Key="TagBrush" Color="#7CC4FF" />
+          <SolidColorBrush x:Key="HairlineBrush" Color="#232323" />
+        </ResourceDictionary>
+        <!-- Light: Tumblr's white rail / grey page look -->
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="RailBrush" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="PageBrush" Color="#F2F2F2" />
+          <SolidColorBrush x:Key="CardBrush" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="CardHoverBrush" Color="#F7F7F7" />
+          <SolidColorBrush x:Key="AccentBrush" Color="#00B8FF" />
+          <SolidColorBrush x:Key="AccentTextBrush" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="TextBrush" Color="#111111" />
+          <SolidColorBrush x:Key="DimBrush" Color="#647585" />
+          <SolidColorBrush x:Key="TagBrush" Color="#0077B6" />
+          <SolidColorBrush x:Key="HairlineBrush" Color="#E4E4E4" />
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+    </ResourceDictionary>
   </Styles.Resources>
 
   <Style Selector="Window">
-    <Setter Property="Background" Value="{StaticResource PageBrush}" />
+    <Setter Property="Background" Value="{DynamicResource PageBrush}" />
     <Setter Property="FontFamily" Value="Inter, Favorit, Helvetica Neue, Arial" />
   </Style>
 
   <Style Selector="TextBlock">
-    <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
     <Setter Property="TextWrapping" Value="Wrap" />
   </Style>
   <Style Selector="TextBlock.dim">
-    <Setter Property="Foreground" Value="{StaticResource DimBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource DimBrush}" />
   </Style>
   <Style Selector="TextBlock.tag">
-    <Setter Property="Foreground" Value="{StaticResource TagBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource TagBrush}" />
   </Style>
   <Style Selector="TextBlock.title">
     <Setter Property="FontSize" Value="24" />
@@ -78,20 +95,20 @@
   </Style>
 
   <Style Selector="Border.card">
-    <Setter Property="Background" Value="{StaticResource CardBrush}" />
+    <Setter Property="Background" Value="{DynamicResource CardBrush}" />
     <Setter Property="CornerRadius" Value="10" />
     <Setter Property="Padding" Value="18" />
   </Style>
   <Style Selector="Button.chip">
     <Setter Property="Background" Value="#232323" />
-    <Setter Property="Foreground" Value="{StaticResource TagBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource TagBrush}" />
     <Setter Property="CornerRadius" Value="14" />
     <Setter Property="Padding" Value="10,4" />
     <Setter Property="FontSize" Value="13" />
   </Style>
   <Style Selector="Button.accent">
-    <Setter Property="Background" Value="{StaticResource AccentBrush}" />
-    <Setter Property="Foreground" Value="#001935" />
+    <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}" />
     <Setter Property="CornerRadius" Value="6" />
     <Setter Property="FontWeight" Value="Bold" />
     <Setter Property="Padding" Value="14,7" />

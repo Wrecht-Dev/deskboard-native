@@ -5,7 +5,7 @@
         x:DataType="vm:ComposerViewModel"
         Title="New post" Width="680" Height="640"
         WindowStartupLocation="CenterOwner"
-        Background="{StaticResource PageBrush}">
+        Background="{DynamicResource PageBrush}">
   <DockPanel Margin="20">
     <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,12">
       <TextBlock Text="New post" Classes="heading" VerticalAlignment="Center" />

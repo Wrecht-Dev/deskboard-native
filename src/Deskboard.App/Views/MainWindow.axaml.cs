@@ -73,6 +73,15 @@ public partial class MainWindow : Window
             await vm.DeletePostAsync(item);
     }
 
+    private async void OnSettings(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainViewModel vm) return;
+        await vm.EnsureIdentityAsync();
+        var settings = new SettingsViewModel(vm.Client, vm.Identity, vm.Blogs);
+        var window = new SettingsWindow { DataContext = settings };
+        await window.ShowDialog(this);
+    }
+
     private void OnSearchKey(object? sender, Avalonia.Input.KeyEventArgs e)
     {
         if (e.Key != Avalonia.Input.Key.Enter) return;
