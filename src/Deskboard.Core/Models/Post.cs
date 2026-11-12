@@ -29,6 +29,7 @@ public sealed class Post
     public List<Block> Content { get; init; } = new();
     public List<TrailItem> Trail { get; init; } = new();
     public string RebloggedFromName { get; init; } = "";
+    public bool IsAdult { get; init; }
 
     public string DisplayName => string.IsNullOrEmpty(BlogTitle) ? BlogName : BlogTitle;
     public string Handle => $"{BlogName}.tumblr.com";

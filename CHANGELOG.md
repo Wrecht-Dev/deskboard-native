@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.3 — Beta (unreleased)
+
+- Hide-mature-posts toggle (Tumblr isAdult flag; best-effort).
+- Friendly offline/timeout errors.
+- Composer quote/link blocks and media viewer are in 0.2.2.
+
 ## 0.2.2 — Beta
 
 - Composer post types: Text / Quote / Link (NPF blocks, unit-tested).

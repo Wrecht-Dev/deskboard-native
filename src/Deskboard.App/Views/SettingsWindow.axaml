@@ -49,6 +49,7 @@
             <TextBlock Text="Posts containing these words (text or tags) are hidden in feeds."
                        Classes="dim" FontSize="12" TextWrapping="Wrap" />
             <CheckBox Content="Filters enabled" IsChecked="{Binding FiltersEnabled}" />
+            <CheckBox Content="Hide mature (18+) blogs from feeds" IsChecked="{Binding HideAdult}" />
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
               <TextBox Grid.Column="0" Text="{Binding NewMutedWord}" Watermark="word or phrase" />
               <Button Grid.Column="1" Content="Add" Command="{Binding AddMutedWordCommand}" />

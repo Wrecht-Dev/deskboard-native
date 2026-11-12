@@ -39,6 +39,8 @@ Full decision record: [`docs/REWRITE.md`](docs/REWRITE.md).
 - A ready-made **"Your tags"** tab aggregates every tag you follow into one feed.
 - **Keyword filters**: mute words/phrases across feeds and pinned tabs, with a
   "N posts hidden — Show hidden" banner. Managed in Settings.
+- **Hide mature posts** (best-effort): hides blogs Tumblr flags as 18+. Tumblr
+  doesn't flag many explicit blogs, so keyword filters are the reliable control.
 - **Local bookmarks**: save any post with ☆; stored on disk, works offline,
   independent of likes. Browse them under **Bookmarks**.
 

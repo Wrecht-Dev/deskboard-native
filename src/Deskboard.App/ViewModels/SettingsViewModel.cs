@@ -27,6 +27,7 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     [ObservableProperty] private string _newMutedWord = "";
     [ObservableProperty] private bool _filtersEnabled;
+    [ObservableProperty] private bool _hideAdult;
 
     public SettingsViewModel(TumblrClient client, string identity, System.Collections.Generic.IEnumerable<string> blogs,
         FeedFilter? filters = null)
@@ -34,6 +35,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         _client = client;
         Filters = filters ?? FeedFilter.Load();
         FiltersEnabled = Filters.Enabled;
+        HideAdult = AppSettings.BlurAdult;
         foreach (var word in Filters.MutedWords) MutedWords.Add(word);
         Identity = string.IsNullOrEmpty(identity) ? "(signed out)" : identity;
         SessionState = client.HasSession
@@ -42,6 +44,8 @@ public sealed partial class SettingsViewModel : ObservableObject
         foreach (var blog in blogs) Blogs.Add(blog);
         IsDark = AppSettings.Theme != "light";
     }
+
+    partial void OnHideAdultChanged(bool value) => AppSettings.BlurAdult = value;
 
     partial void OnFiltersEnabledChanged(bool value)
     {

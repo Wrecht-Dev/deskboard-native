@@ -249,6 +249,7 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _isPinnedTop;
     [ObservableProperty] private bool _hasPinnedTabs;
     [ObservableProperty] private bool _hasBookmarks;
+    [ObservableProperty] private bool _hideAdult;
     [ObservableProperty] private bool _hasUpdate;
     [ObservableProperty] private bool _isQueueView;
     [ObservableProperty] private string _updateLabel = "";
@@ -273,6 +274,7 @@ public sealed partial class MainViewModel : ObservableObject
         _demoMode = Environment.GetEnvironmentVariable("DESKBOARD_DEMO") == "1";
         LoadPinnedTabs();
         Filters = FeedFilter.Load();
+        HideAdult = AppSettings.BlurAdult;
         LoadBookmarks();
         SelectedFeed = Feeds[0];
         if (_demoMode)
@@ -469,9 +471,18 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
+    partial void OnHideAdultChanged(bool value) => AppSettings.BlurAdult = value;
+
     private bool ShouldSkip(Post post)
     {
-        if (ShowFiltered || !Filters.IsMuted(post)) return false;
+        if (ShowFiltered) return false;
+        if (HideAdult && post.IsAdult)
+        {
+            HiddenCount++;
+            HasHiddenPosts = true;
+            return true;
+        }
+        if (!Filters.IsMuted(post)) return false;
         HiddenCount++;
         HasHiddenPosts = true;
         return true;
@@ -487,7 +498,7 @@ public sealed partial class MainViewModel : ObservableObject
     private void FinishFilterCounters()
     {
         if (HiddenCount > 0)
-            FilterNote = $"{HiddenCount} post{(HiddenCount == 1 ? "" : "s")} hidden by your keyword filters";
+            FilterNote = $"{HiddenCount} post{(HiddenCount == 1 ? "" : "s")} hidden by your filters";
     }
 
     [RelayCommand]

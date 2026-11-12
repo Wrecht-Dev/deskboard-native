@@ -935,7 +935,19 @@ public sealed partial class TumblrClient : IDisposable
             }
 
             using var request = NewRequest(method, url, content);
-            using var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
+            HttpResponseMessage response;
+            try
+            {
+                response = await _http.SendAsync(request, ct).ConfigureAwait(false);
+            }
+            catch (HttpRequestException)
+            {
+                throw new TumblrException("You appear to be offline — check your connection and retry.", 0);
+            }
+            catch (TaskCanceledException) when (!ct.IsCancellationRequested)
+            {
+                throw new TumblrException("Tumblr timed out — retry in a moment.", 0);
+            }
             var body = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
             if (response.IsSuccessStatusCode)
                 return JsonDocument.Parse(string.IsNullOrWhiteSpace(body) ? "{}" : body);

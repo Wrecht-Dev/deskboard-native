@@ -76,6 +76,7 @@ Legend: ✅ working & verified live · 🟡 partial · ⏳ planned · ⛔ exclud
 | Per-tab Latest/Top sort, persisted | ✅ |
 | Add / unpin dialogs | ✅ |
 | Keyword filtering | ✅ live-verified (hidden banner + Show hidden) |
+| Hide mature posts | 🟡 honours Tumblr's `isAdult` flag only — many explicit blogs aren't flagged by Tumblr, so keyword filters remain the reliable control |
 | Local bookmarks | ✅ live-verified (seeded + rendered, offline) |
 | Session management | ✅ sign in / browser fallback / sign out; multi-account ⏳ |
 
@@ -135,6 +136,7 @@ preview text, pixel-perfect typography (Favorit unavailable).
 | Queue pause / resume / shuffle | ✅ wired, empty queue on account |
 | Queue reorder (move up/down) | ✅ wired via insert_after; empty queue on account |
 | Retry on error | ✅ status-bar action re-runs the current surface |
+| Offline/timeouts | ✅ friendly messages (offline, timed out) instead of raw exceptions |
 | Sign out | ✅ clears cookies + store, asks for restart |
 | GIF library picker | ✅ live thumbnails, attaches as image block |
 | First-run welcome | ✅ screenshot-verified |

@@ -100,6 +100,9 @@ internal static class PostParser
             Content = content,
             Trail = trail,
             RebloggedFromName = p.Str("rebloggedFromName"),
+            IsAdult = blog.ValueKind == JsonValueKind.Object &&
+                      (blog.Bool("isAdult") || blog.Bool("isNsfw")),
+
         };
     }
 
