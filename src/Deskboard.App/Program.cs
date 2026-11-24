@@ -1,7 +1,6 @@
 ﻿using System;
 using Avalonia;
 using Deskboard.App.Services;
-using System;
 
 namespace Deskboard.App;
 

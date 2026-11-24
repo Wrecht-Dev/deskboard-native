@@ -79,7 +79,11 @@ public sealed partial class PostItemViewModel : ObservableObject
     [ObservableProperty] private string _bookmarkGlyph = "☆";
     [ObservableProperty] private bool _canReorder;
     [ObservableProperty] private bool _canPublishDraft;
-    public bool IsBookmarked { get; private set; }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(BookmarkActionLabel))]
+    private bool _isBookmarked;
+
+    public string BookmarkActionLabel => IsBookmarked ? "Remove bookmark" : "Bookmark post";
 
     public void RefreshBookmark(bool saved)
     {
@@ -184,12 +188,11 @@ public sealed partial class PostItemViewModel : ObservableObject
 public sealed partial class MainViewModel : ObservableObject
 {
     private readonly TumblrClient _client;
-    private string? _next;
+    private Func<Task<Paged<Post>>>? _nextPostPage;
     private string? _notificationsNext;
     private string _tagSort = "latest";
     private string _blog = "";
     private string _selfBlog = "";
-    private int _pinnedAggOffset;
 
     public ObservableCollection<PostItemViewModel> Posts { get; } = new();
     public ObservableCollection<string> Blogs { get; } = new();
@@ -242,18 +245,23 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _composerText = "";
     [ObservableProperty] private bool _isSending;
     [ObservableProperty] private bool _hasSearchMeta;
-    [ObservableProperty] private string _searchQuery = "";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsSearchPage))]
+    private string _searchQuery = "";
+    public bool IsSearchPage => SearchQuery.Length > 0;
     [ObservableProperty] private bool _isBlogPage;
     [ObservableProperty] private bool _isFollowing;
     [ObservableProperty] private string _blogFollowersLabel = "";
     [ObservableProperty] private bool _canAsk;
     [ObservableProperty] private bool _canSubmitBlog;
     [ObservableProperty] private bool _hasMoreNotifications;
-    [ObservableProperty] private PinnedTab? _activePinnedTab;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanSortPinnedTab))]
+    private PinnedTab? _activePinnedTab;
+    public bool CanSortPinnedTab => ActivePinnedTab is { Kind: not "search" };
     [ObservableProperty] private bool _isPinnedTab;
     [ObservableProperty] private bool _isPinnedLatest = true;
     [ObservableProperty] private bool _isPinnedTop;
-    [ObservableProperty] private bool _hasPinnedTabs;
     [ObservableProperty] private bool _hasBookmarks;
     [ObservableProperty] private bool _hideAdult;
     [ObservableProperty] private bool _hasUpdate;
@@ -271,8 +279,44 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _identity = "";
     [ObservableProperty] private bool _hasMore;
 
+    private int _loadVersion;
+    private Func<Task<Paged<Post>>>? _reloadPosts;
     private readonly bool _demoMode;
+
+    private int BeginLoad()
+    {
+        IsLoading = true;
+        HasStatus = false;
+        return ++_loadVersion;
+    }
+
+    private void EndLoad(int version)
+    {
+        if (version == _loadVersion) IsLoading = false;
+    }
+
+    private void ResetPage()
+    {
+        ++_loadVersion;
+        IsLoading = false;
+        IsTagPage = IsBlogPage = IsNotificationsPage = IsMessagesPage = IsLibraryPage = IsBookmarksPage = false;
+        IsPinnedTab = IsQueueView = InThread = CanGoBack = HasSearchMeta = HasStatus = false;
+        ActivePinnedTab = null;
+        SearchQuery = "";
+        HasMoreNotifications = false;
+        _notificationsNext = null;
+        Notifications.Clear();
+        SelectedConversation = null;
+        ComposerText = "";
+        ShowFiltered = false;
+        _reloadPosts = null;
+        _nextPostPage = null;
+        HasMore = false;
+        Subhead = "";
+        ResetFilterCounters();
+    }
     public bool DemoMode => _demoMode;
+    public bool IsSignedIn => _demoMode || _client.HasSession;
 
     public MainViewModel(TumblrClient? client = null)
     {
@@ -282,7 +326,8 @@ public sealed partial class MainViewModel : ObservableObject
         Filters = FeedFilter.Load();
         HideAdult = AppSettings.BlurAdult;
         LoadBookmarks();
-        SelectedFeed = Feeds[0];
+        _selectedFeed = _client.HasSession || _demoMode ? Feeds[0] : Feeds[2];
+        Headline = _selectedFeed.Label;
         if (_demoMode)
         {
             LoadDemoData();
@@ -356,10 +401,11 @@ public sealed partial class MainViewModel : ObservableObject
 
     public async Task InitializeAsync()
     {
+        var version = _loadVersion;
         Status = "Connecting to Tumblr…"; HasStatus = true;
         if (!await _client.EnsureTokenAsync())
         {
-            Status = "Couldn't reach Tumblr — check your connection.";
+            if (version == _loadVersion) Status = "Couldn't reach Tumblr — check your connection.";
             return;
         }
         for (var attempt = 0; attempt < 2 && Identity.Length == 0; attempt++)
@@ -380,87 +426,71 @@ public sealed partial class MainViewModel : ObservableObject
         }
         _ = CheckForUpdatesAsync();
         _ = LoadTrendingAsync();
-        await LoadFeedAsync();
+        if (version == _loadVersion) await LoadFeedAsync();
     }
 
     partial void OnSelectedFeedChanged(FeedOption? value)
     {
-        if (value is null || IsTagPage) return;
-        if (_demoMode)
-        {
-            Headline = value.Label;
-            return;
-        }
-        _blog = "";
+        if (value is null) return;
+        _ = OpenFeedAsync(value);
+    }
+
+    private async Task OpenFeedAsync(FeedOption value)
+    {
         Headline = value.Label;
-        CanGoBack = false;
-        IsBlogPage = false;
-        IsMessagesPage = false;
-        IsLibraryPage = false;
-        IsBookmarksPage = false;
-        InThread = false;
-        if (value.Key == "notifications")
+        if (_demoMode) return;
+        ResetPage();
+        switch (value.Key)
         {
-            IsNotificationsPage = true;
-            SearchBlogs.Clear(); HasSearchMeta = false;
-            _ = LoadNotificationsAsync();
-            return;
+            case "notifications":
+                IsNotificationsPage = true;
+                await LoadNotificationsAsync();
+                break;
+            case "bookmarks":
+                IsBookmarksPage = true;
+                LoadBookmarks();
+                Subhead = $"{Bookmarks.Count} saved";
+                break;
+            case "library":
+                IsLibraryPage = true;
+                await LoadLibraryAsync("inbox");
+                break;
+            case "messages":
+                IsMessagesPage = true;
+                await LoadConversationsAsync();
+                break;
+            default:
+                await LoadFeedAsync();
+                break;
         }
-        if (value.Key == "bookmarks")
-        {
-            IsNotificationsPage = false;
-            IsMessagesPage = false;
-            IsLibraryPage = false;
-            IsBookmarksPage = true;
-            Headline = "Bookmarks";
-            LoadBookmarks();
-            Subhead = $"{Bookmarks.Count} saved";
-            return;
-        }
-        if (value.Key == "library")
-        {
-            IsNotificationsPage = false;
-            IsMessagesPage = false;
-            IsLibraryPage = true;
-            _ = LoadLibraryAsync("inbox");
-            return;
-        }
-        if (value.Key == "messages")
-        {
-            IsLibraryPage = false;
-            IsNotificationsPage = false;
-            IsMessagesPage = true;
-            InThread = false;
-            SearchBlogs.Clear(); HasSearchMeta = false;
-            _ = LoadConversationsAsync();
-            return;
-        }
-        IsNotificationsPage = false;
-        _ = LoadFeedAsync();
     }
 
     public async Task SearchAsync(string query)
     {
         if (string.IsNullOrWhiteSpace(query)) return;
-        IsTagPage = false;
-        IsBlogPage = false;
-        IsNotificationsPage = false;
+        ResetPage();
         CanGoBack = true;
         Headline = "Search";
-        SearchQuery = query.Trim();
-        Subhead = $"results for “{SearchQuery}”";
+        var term = query.Trim();
+        SearchQuery = term;
         SearchBlogs.Clear();
         SearchTags.Clear();
+        var posts = LoadPostsAsync(() => _client.SearchPostsAsync(term));
+        var version = _loadVersion;
         try
         {
-            var blogs = await _client.SearchBlogsAsync(SearchQuery);
-            foreach (var blog in blogs.Blogs) SearchBlogs.Add(new BlogRowViewModel(blog, this));
-            foreach (var tag in blogs.Tags) SearchTags.Add(tag);
-            HasSearchMeta = SearchBlogs.Count > 0 || SearchTags.Count > 0;
-            foreach (var row in SearchBlogs) _ = row.LoadAsync();
+            var blogs = await _client.SearchBlogsAsync(term);
+            if (version == _loadVersion)
+            {
+                foreach (var blog in blogs.Blogs) SearchBlogs.Add(new BlogRowViewModel(blog, this));
+                foreach (var tag in blogs.Tags) SearchTags.Add(tag);
+                HasSearchMeta = SearchBlogs.Count > 0 || SearchTags.Count > 0;
+                foreach (var row in SearchBlogs) _ = row.LoadAsync();
+            }
         }
-        catch (Exception) { HasSearchMeta = false; }
-        await LoadPostsAsync(() => _client.SearchPostsAsync(SearchQuery));
+        catch (Exception) when (version == _loadVersion) { HasSearchMeta = false; }
+        catch (Exception) { }
+        await posts;
     }
 
     public async Task FollowBlogAsync(string blog)
@@ -512,7 +542,14 @@ public sealed partial class MainViewModel : ObservableObject
     {
         ShowFiltered = true;
         HasHiddenPosts = false;
-        await LoadFeedAsync();
+        if (_reloadPosts is { } reload) await LoadPostsAsync(reload);
+    }
+
+    public async Task ApplyFiltersAsync(bool hideAdult)
+    {
+        HideAdult = hideAdult;
+        ShowFiltered = false;
+        if (_reloadPosts is { } reload) await LoadPostsAsync(reload);
     }
 
     public void LoadBookmarks()
@@ -559,7 +596,6 @@ public sealed partial class MainViewModel : ObservableObject
     {
         PinnedTabs.Clear();
         foreach (var tab in PinnedTabStore.Load()) PinnedTabs.Add(tab);
-        HasPinnedTabs = PinnedTabs.Count > 0;
     }
 
     public void SavePinnedTabs() => PinnedTabStore.Save(PinnedTabs);
@@ -567,7 +603,6 @@ public sealed partial class MainViewModel : ObservableObject
     public void AddPinnedTab(PinnedTab tab)
     {
         PinnedTabs.Add(tab);
-        HasPinnedTabs = true;
         SavePinnedTabs();
         _ = OpenPinnedTabAsync(tab);
     }
@@ -577,18 +612,17 @@ public sealed partial class MainViewModel : ObservableObject
     {
         if (ActivePinnedTab is not { } tab) return;
         PinnedTabs.Remove(tab);
-        HasPinnedTabs = PinnedTabs.Count > 0;
         SavePinnedTabs();
         ActivePinnedTab = null;
         IsPinnedTab = false;
         IsPinnedLatest = true; IsPinnedTop = false;
-        Headline = SelectedFeed?.Label ?? "Home";
-        _ = LoadFeedAsync();
+        if (SelectedFeed is { } feed) _ = OpenFeedAsync(feed);
     }
 
     [RelayCommand]
     public async Task OpenPinnedTabAsync(PinnedTab tab)
     {
+        ResetPage();
         ActivePinnedTab = tab;
         IsPinnedTab = true;
         IsTagPage = false;
@@ -597,7 +631,6 @@ public sealed partial class MainViewModel : ObservableObject
         IsMessagesPage = false;
         IsLibraryPage = false;
         CanGoBack = false;
-        _pinnedAggOffset = 0;
         IsPinnedLatest = tab.Sort != "top";
         IsPinnedTop = tab.Sort == "top";
         Headline = tab.Title;
@@ -608,13 +641,13 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     public async Task SetPinnedSortAsync(string sort)
     {
-        if (ActivePinnedTab is not { } tab) return;
+        if (ActivePinnedTab is not { Kind: not "search" } tab) return;
         tab.Sort = sort == "top" ? "top" : "latest";
+        ShowFiltered = false;
         IsPinnedLatest = tab.Sort == "latest";
         IsPinnedTop = tab.Sort == "top";
         SavePinnedTabs();
         Headline = tab.Title;
-        _pinnedAggOffset = 0;
         await LoadPostsAsync(() => PinnedPageAsync(tab));
     }
 
@@ -631,48 +664,50 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
-    /// <summary>Custom feature: one feed built from all followed tags, sortable.</summary>
     private async Task<Paged<Post>> YourTagsPageAsync(string sort)
     {
+        var version = _loadVersion;
         var tags = (await _client.GetFollowedTagsAsync())
-            .Where(t => t.Length > 0 && !t.Contains('/') && !t.Contains('?'))
+            .Where(tag => !string.IsNullOrWhiteSpace(tag))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
-        if (tags.Count == 0) return new Paged<Post>();
-        var batch = tags.Skip(_pinnedAggOffset).Take(6).ToList();
-        if (batch.Count == 0)
-        {
-            _pinnedAggOffset = 0;
-            batch = tags.Take(6).ToList();
-        }
-
-        // One bad tag (deleted, renamed, NSFW-gated) must not sink the whole tab.
-        var pages = await Task.WhenAll(batch.Select(async tag =>
-        {
-            try { return await _client.GetTaggedAsync(tag, sort); }
-            catch (Exception) { return new Paged<Post>(); }
-        }));
         var seen = new HashSet<string>();
-        var posts = new List<Post>();
-        foreach (var page in pages)
-            foreach (var post in page.Items)
-                if (post.Id.Length > 0 && seen.Add(post.Id)) posts.Add(post);
+        return await LoadBatchAsync(0);
 
-        if (sort == "top") posts.Sort((a, b) => b.NoteCount.CompareTo(a.NoteCount));
-        else posts.Sort((a, b) => b.Timestamp.CompareTo(a.Timestamp));
+        async Task<Paged<Post>> LoadBatchAsync(int offset)
+        {
+            var posts = new List<Post>();
+            while (offset < tags.Count && version == _loadVersion && posts.Count == 0)
+            {
+                var batch = tags.Skip(offset).Take(6).ToList();
+                var pages = await Task.WhenAll(batch.Select(async tag =>
+                {
+                    try { return await _client.GetTaggedAsync(tag, sort); }
+                    catch (TumblrException ex) when (ex.Status is 403 or 404) { return new Paged<Post>(); }
+                }));
+                foreach (var page in pages)
+                    foreach (var post in page.Items)
+                        if (post.Id.Length > 0 && seen.Add(post.Id)) posts.Add(post);
+                offset += batch.Count;
+            }
 
-        _pinnedAggOffset += batch.Count;
-        if (_pinnedAggOffset >= tags.Count) _pinnedAggOffset = 0;
-        return new Paged<Post> { Items = posts };
+            if (version == _loadVersion)
+                _nextPostPage = offset < tags.Count ? () => LoadBatchAsync(offset) : null;
+
+            if (sort == "top") posts.Sort((a, b) => b.NoteCount.CompareTo(a.NoteCount));
+            else posts.Sort((a, b) => b.Timestamp.CompareTo(a.Timestamp));
+            return new Paged<Post> { Items = posts };
+        }
     }
 
     private async Task LoadNotificationsAsync(bool reset = true)
     {
-        if (IsLoading) return;
-        IsLoading = true;
+        var version = BeginLoad();
         try
         {
             // Activity needs the signed-in blog name; a cold start may not have it yet.
             await EnsureIdentityAsync();
+            if (version != _loadVersion) return;
             if (string.IsNullOrEmpty(PrimaryBlog))
             {
                 HasStatus = true;
@@ -682,6 +717,7 @@ public sealed partial class MainViewModel : ObservableObject
 
             var url = reset ? null : _notificationsNext;
             var page = await _client.GetNotificationsAsync(PrimaryBlog, url);
+            if (version != _loadVersion) return;
             if (reset) Notifications.Clear();
             foreach (var n in page.Notifications)
             {
@@ -697,10 +733,11 @@ public sealed partial class MainViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            if (version != _loadVersion) return;
             HasStatus = true;
             Status = ex is TumblrException ? ex.Message : $"Couldn't load activity: {ex.Message}";
         }
-        finally { IsLoading = false; }
+        finally { EndLoad(version); }
     }
 
     [RelayCommand]
@@ -711,9 +748,15 @@ public sealed partial class MainViewModel : ObservableObject
         if (IsLibraryPage) { await LoadLibraryAsync(LibraryKind); return; }
         if (IsBookmarksPage) { LoadBookmarks(); Subhead = $"{Bookmarks.Count} saved"; return; }
         if (IsPinnedTab && ActivePinnedTab is { } pinned) { await OpenPinnedTabAsync(pinned); return; }
-        if (IsTagPage) { await SetTagSortAsync(IsPinnedTop ? "top" : "latest"); return; }
+        if (IsMessagesPage)
+        {
+            if (InThread && SelectedConversation is { } conversation) await OpenConversationAsync(conversation);
+            else await LoadConversationsAsync(ShowingRequests);
+            return;
+        }
         if (IsBlogPage) { await OpenBlogAsync(Headline); return; }
-        await LoadFeedAsync();
+        if (_reloadPosts is { } reload) await LoadPostsAsync(reload);
+        else await InitializeAsync();
     }
 
     [RelayCommand]
@@ -726,23 +769,30 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     public async Task LoadMoreAsync()
     {
-        if (IsLoading || _next is null) return;
-        await LoadPageAsync(_next);
+        if (IsLoading || _nextPostPage is not { } fetch) return;
+        await LoadPageAsync(fetch);
     }
 
     public async Task OpenBlogAsync(string blog)
     {
         if (string.IsNullOrWhiteSpace(blog)) return;
+        ResetPage();
         IsTagPage = false;
         IsBlogPage = true;
+        CanAsk = CanAskAnon = CanSubmitBlog = IsFollowing = false;
+        BlogFollowersLabel = "";
         IsNotificationsPage = false;
         CanGoBack = true;
         Headline = blog;
         Subhead = "loading…";
-        await LoadPostsAsync(() => _client.GetBlogPostsAsync(blog));
+        var posts = LoadPostsAsync(() => _client.GetBlogPostsAsync(blog));
+        var version = _loadVersion;
+        await posts;
+        if (version != _loadVersion) return;
         try
         {
             var info = await _client.GetBlogInfoAsync(blog);
+            if (version != _loadVersion) return;
             IsFollowing = info.IsFollowing;
             BlogFollowersLabel = info.Followers > 0
                 ? $"{info.Followers / 1000.0:0.#}K followers"
@@ -751,7 +801,7 @@ public sealed partial class MainViewModel : ObservableObject
             CanAskAnon = info.AskAnon;
             CanSubmitBlog = info.CanSubmit;
         }
-        catch (Exception) { CanAsk = false; }
+        catch (Exception) { if (version == _loadVersion) CanAsk = false; }
     }
 
     [RelayCommand]
@@ -780,6 +830,7 @@ public sealed partial class MainViewModel : ObservableObject
     public async Task OpenTagAsync(string tag)
     {
         if (string.IsNullOrWhiteSpace(tag)) return;
+        ResetPage();
         IsTagPage = true;
         IsBlogPage = false;
         IsNotificationsPage = false;
@@ -795,6 +846,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         if (!IsTagPage) return;
         var tag = Headline.TrimStart('#');
+        ShowFiltered = false;
         _tagSort = sort;
         IsLatest = sort == "latest";
         IsTop = sort == "top";
@@ -804,11 +856,7 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     public async Task GoBackAsync()
     {
-        CanGoBack = false;
-        IsTagPage = false;
-        IsBlogPage = false;
-        IsNotificationsPage = SelectedFeed?.Key == "notifications";
-        await LoadFeedAsync();
+        if (SelectedFeed is { } feed) await OpenFeedAsync(feed);
     }
 
     private async Task LoadFeedAsync()
@@ -825,21 +873,24 @@ public sealed partial class MainViewModel : ObservableObject
 
     private async Task LoadPostsAsync(Func<Task<Paged<Post>>> fetch)
     {
-        if (IsLoading) return;
-        IsLoading = true;
+        _reloadPosts = fetch;
+        Posts.Clear();
+        _nextPostPage = null;
+        HasMore = false;
+        ResetFilterCounters();
+        var version = BeginLoad();
         try
         {
             var page = await fetch();
-            Posts.Clear();
-            ResetFilterCounters();
+            if (version != _loadVersion) return;
             foreach (var post in page.Items)
             {
                 if (ShouldSkip(post)) continue;
                 Posts.Add(new PostItemViewModel(post, this));
             }
             FinishFilterCounters();
-            _next = page.NextUrl;
-            HasMore = _next is not null;
+            if (ActivePinnedTab?.Kind != "your-tags") SetNextPostPage(page.NextUrl);
+            HasMore = _nextPostPage is not null;
             Subhead = $"{Headline} · {Posts.Count} posts{(page.Total is { } t ? $" of {t}" : "")}";
             HasStatus = Posts.Count == 0;
             Status = Posts.Count == 0
@@ -849,19 +900,24 @@ public sealed partial class MainViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            if (version != _loadVersion) return;
             HasStatus = true;
             Status = ex is TumblrException ? ex.Message : $"Couldn't load: {ex.Message}";
         }
-        finally { IsLoading = false; }
+        finally { EndLoad(version); }
     }
 
-    private async Task LoadPageAsync(string url)
+    private void SetNextPostPage(string? url)
+        => _nextPostPage = url is null ? null : () => _client.GetPageAsync(url);
+
+    private async Task LoadPageAsync(Func<Task<Paged<Post>>> fetch)
     {
-        if (IsLoading) return;
+        var version = _loadVersion;
         IsLoading = true;
         try
         {
-            var page = await _client.GetPageAsync(url);
+            var page = await fetch();
+            if (version != _loadVersion) return;
             foreach (var post in page.Items)
             {
                 if (ShouldSkip(post)) continue;
@@ -869,27 +925,29 @@ public sealed partial class MainViewModel : ObservableObject
                 Posts.Add(item);
                 _ = item.LoadImagesAsync();
             }
-            _next = page.NextUrl;
-            HasMore = _next is not null;
+            FinishFilterCounters();
+            if (ActivePinnedTab?.Kind != "your-tags") SetNextPostPage(page.NextUrl);
+            HasMore = _nextPostPage is not null;
             Subhead = $"{Headline} · {Posts.Count} posts";
         }
         catch (Exception ex)
         {
+            if (version != _loadVersion) return;
             HasStatus = true;
             Status = ex is TumblrException ? ex.Message : $"Couldn't load more: {ex.Message}";
         }
-        finally { IsLoading = false; }
+        finally { EndLoad(version); }
     }
 
     private async Task LoadConversationsAsync(bool requests = false)
     {
-        if (IsLoading) return;
         ShowingRequests = requests;
-        IsLoading = true;
+        var version = BeginLoad();
         try
         {
             Conversations.Clear();
             var page = await _client.GetConversationsAsync(requests: requests);
+            if (version != _loadVersion) return;
             foreach (var conversation in page.Conversations)
                 Conversations.Add(new ConversationItemViewModel(conversation, this, requests));
             Subhead = $"{Conversations.Count} conversations";
@@ -898,10 +956,11 @@ public sealed partial class MainViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            if (version != _loadVersion) return;
             HasStatus = true;
             Status = ex is TumblrException ? ex.Message : $"Couldn't load messages: {ex.Message}";
         }
-        finally { IsLoading = false; }
+        finally { EndLoad(version); }
     }
 
     [RelayCommand]
@@ -930,22 +989,27 @@ public sealed partial class MainViewModel : ObservableObject
 
     public async Task OpenConversationAsync(ConversationItemViewModel item)
     {
+        if (SelectedConversation != item) ComposerText = "";
         SelectedConversation = item;
         InThread = true;
         ThreadTitle = item.Title;
         ThreadMessages.Clear();
+        var version = BeginLoad();
         try
         {
             var messages = await _client.GetMessagesAsync(item.Conversation.Id);
+            if (version != _loadVersion || !InThread) return;
             foreach (var message in messages)
                 ThreadMessages.Add(new MessageItemViewModel(message, Identity, item.Conversation));
             Headline = item.Title;
         }
         catch (Exception ex)
         {
+            if (version != _loadVersion || !InThread) return;
             HasStatus = true;
             Status = ex is TumblrException ? ex.Message : $"Couldn't load the conversation: {ex.Message}";
         }
+        finally { EndLoad(version); }
     }
 
     [RelayCommand]
@@ -962,7 +1026,8 @@ public sealed partial class MainViewModel : ObservableObject
         try
         {
             await _client.SendMessageAsync(participant, text, conversation.Id);
-            ComposerText = "";
+            if (!InThread || SelectedConversation?.Conversation != conversation) return;
+            if (ComposerText.Trim() == text) ComposerText = "";
             var sent = new Message { Text = text, Participant = Identity, Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() };
             ThreadMessages.Add(new MessageItemViewModel(sent, Identity, conversation) { });
         }
@@ -979,8 +1044,10 @@ public sealed partial class MainViewModel : ObservableObject
     {
         InThread = false;
         SelectedConversation = null;
+        ComposerText = "";
         ThreadMessages.Clear();
-        _ = LoadConversationsAsync();
+        Headline = "Messages";
+        _ = LoadConversationsAsync(ShowingRequests);
     }
 
     [RelayCommand]
@@ -1063,34 +1130,40 @@ public sealed partial class MainViewModel : ObservableObject
 
     public async Task LoadLibraryAsync(string kind)
     {
-        if (IsLoading) return;
+        Posts.Clear();
+        _nextPostPage = null;
+        HasMore = IsQueueView = false;
         LibraryKind = kind;
         LibraryLabel = kind switch { "drafts" => "Drafts", "queue" => "Queue", _ => "Inbox" };
         Headline = LibraryLabel;
-        IsLoading = true;
+        var version = BeginLoad();
         try
         {
+            await EnsureIdentityAsync();
+            if (version != _loadVersion) return;
             var page = kind switch
             {
                 "drafts" => await _client.GetDraftsAsync(PrimaryBlog),
                 "queue" => await _client.GetQueueAsync(PrimaryBlog),
                 _ => await _client.GetInboxAsync(),
             };
-            Posts.Clear();
+            if (version != _loadVersion) return;
             foreach (var post in page.Items) Posts.Add(new PostItemViewModel(post, this));
-            _next = page.NextUrl;
+            SetNextPostPage(page.NextUrl);
+            HasMore = _nextPostPage is not null;
             IsQueueView = kind == "queue";
-        Subhead = $"{LibraryLabel} · {Posts.Count} posts";
+            Subhead = $"{LibraryLabel} · {Posts.Count} posts";
             HasStatus = Posts.Count == 0;
             Status = Posts.Count == 0 ? $"Nothing in {LibraryLabel.ToLowerInvariant()}." : "";
             foreach (var item in Posts) _ = item.LoadImagesAsync();
         }
         catch (Exception ex)
         {
+            if (version != _loadVersion) return;
             HasStatus = true;
             Status = ex is TumblrException ? ex.Message : $"Couldn't load {LibraryLabel.ToLowerInvariant()}: {ex.Message}";
         }
-        finally { IsLoading = false; }
+        finally { EndLoad(version); }
     }
 
     public async Task PublishDraftAsync(PostItemViewModel item)

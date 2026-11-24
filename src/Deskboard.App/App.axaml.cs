@@ -3,7 +3,6 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Styling;
-using Avalonia.Threading;
 using Deskboard.App.Services;
 using Deskboard.App.ViewModels;
 using Deskboard.App.Views;
@@ -53,7 +52,6 @@ public partial class App : Application
 
                     var login = new LoginViewModel(client);
                     var loginWindow = new LoginWindow { DataContext = login };
-                    login.Completed += (_, ok) => StartShell();
                     loginWindow.Closed += (_, _) => { if (window.DataContext is null) StartShell(); };
                     loginWindow.Show();
                 };
@@ -63,7 +61,6 @@ public partial class App : Application
             {
                 var login = new LoginViewModel(client);
                 var loginWindow = new LoginWindow { DataContext = login };
-                login.Completed += (_, ok) => StartShell();
                 loginWindow.Closed += (_, _) => { if (window.DataContext is null) StartShell(); };
                 loginWindow.Show();
             }

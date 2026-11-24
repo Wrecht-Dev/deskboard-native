@@ -11,14 +11,14 @@
   <Window.Resources>
     <conv:BoolToAlignmentConverter x:Key="AlignConverter" />
   </Window.Resources>
-  <Grid ColumnDefinitions="232,*,324">
+  <Grid Name="Workspace" ColumnDefinitions="216,*,260">
 
     <!-- left rail -->
     <Border Grid.Column="0" Background="{DynamicResource RailBrush}">
-      <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" Margin="0,20,0,16">
-        <TextBlock Grid.Row="0" Text="tumblr" FontSize="30" FontWeight="Black"
+      <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="0,20,0,16">
+        <TextBlock Grid.Row="0" Text="Deskboard" FontSize="30" FontWeight="Black"
                    Foreground="{DynamicResource TextBrush}" Margin="28,0,0,18" />
-        <TextBox Grid.Row="1" Name="SearchBox" Watermark="Search Tumblr" Margin="18,0,18,10"
+        <TextBox Grid.Row="1" Name="SearchBox" AutomationProperties.Name="Search Tumblr" PlaceholderText="Search Tumblr" Margin="18,0,18,10"
                  FontSize="13" KeyDown="OnSearchKey" />
         <ListBox Grid.Row="2" Classes="nav" ItemsSource="{Binding Feeds}"
                  SelectedItem="{Binding SelectedFeed}">
@@ -28,12 +28,13 @@
             </DataTemplate>
           </ListBox.ItemTemplate>
         </ListBox>
-        <StackPanel Grid.Row="3" Margin="10,8,10,0" Spacing="3" IsVisible="{Binding HasPinnedTabs}">
-          <Grid ColumnDefinitions="*,Auto" Margin="8,0,4,2">
+        <DockPanel Grid.Row="3" Margin="10,8,10,12">
+          <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="8,0,4,2">
             <TextBlock Text="PINNED" Classes="dim" FontSize="10" VerticalAlignment="Center" />
-            <Button Grid.Column="1" Content="+" FontSize="14" Padding="7,0" Background="Transparent"
+            <Button Grid.Column="1" Content="Add" AutomationProperties.Name="Pin a feed" FontSize="13" Padding="7,0" Background="Transparent"
                     Foreground="{DynamicResource DimBrush}" Click="OnAddPinned" ToolTip.Tip="Pin a tab" />
           </Grid>
+          <ScrollViewer HorizontalScrollBarVisibility="Disabled">
           <ItemsControl ItemsSource="{Binding PinnedTabs}">
             <ItemsControl.ItemTemplate>
               <DataTemplate>
@@ -48,16 +49,19 @@
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
-        </StackPanel>
+          </ScrollViewer>
+        </DockPanel>
 
-        <StackPanel Grid.Row="5" Spacing="10" Margin="20,0">
+        <StackPanel Grid.Row="4" Spacing="10" Margin="20,0">
           <TextBlock Text="{Binding Identity}" Classes="dim" FontSize="12" />
-          <Button Classes="accent" Content="Create" HorizontalAlignment="Stretch" Click="OnCreate" />
+          <Button Classes="accent" Content="Create" HorizontalAlignment="Stretch" Click="OnCreate"
+                  IsVisible="{Binding IsSignedIn}" />
+          <Button Classes="accent" Content="Sign in" HorizontalAlignment="Stretch" Click="OnSignIn"
+                  IsVisible="{Binding !IsSignedIn}" />
           <Button Content="{Binding UpdateLabel}" Command="{Binding OpenUpdateCommand}"
                   IsVisible="{Binding HasUpdate}" Classes="accent" FontSize="12"
                   HorizontalAlignment="Stretch" />
           <Button Content="Settings" Click="OnSettings" FontSize="12" HorizontalAlignment="Stretch" />
-          <TextBlock Text="native rewrite · .NET + Avalonia" Classes="dim" FontSize="10" />
         </StackPanel>
       </Grid>
     </Border>
@@ -86,18 +90,21 @@
           <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6"
                       IsVisible="{Binding IsPinnedTab}" VerticalAlignment="Center">
             <Button Content="Latest" Classes="chip" FontSize="13" Padding="12,5"
-                    Command="{Binding SetPinnedSortCommand}" CommandParameter="latest" />
+                    IsVisible="{Binding CanSortPinnedTab}" Classes.selected="{Binding IsPinnedLatest}" Command="{Binding SetPinnedSortCommand}" CommandParameter="latest" />
             <Button Content="Top" Classes="chip" FontSize="13" Padding="12,5"
-                    Command="{Binding SetPinnedSortCommand}" CommandParameter="top" />
+                    IsVisible="{Binding CanSortPinnedTab}" Classes.selected="{Binding IsPinnedTop}" Command="{Binding SetPinnedSortCommand}" CommandParameter="top" />
             <Button Content="Unpin" Command="{Binding RemoveActivePinnedCommand}" FontSize="12" />
           </StackPanel>
           <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6"
                       IsVisible="{Binding IsTagPage}" VerticalAlignment="Center">
             <Button Content="Latest" Classes="chip" FontSize="13" Padding="12,5"
-                    Command="{Binding SetTagSortCommand}" CommandParameter="latest" />
+                    Classes.selected="{Binding IsLatest}" Command="{Binding SetTagSortCommand}" CommandParameter="latest" />
             <Button Content="Top" Classes="chip" FontSize="13" Padding="12,5"
-                    Command="{Binding SetTagSortCommand}" CommandParameter="top" />
+                    Classes.selected="{Binding IsTop}" Command="{Binding SetTagSortCommand}" CommandParameter="top" />
+            <Button Content="Pin tag" Click="OnPinCurrentFeed" />
           </StackPanel>
+          <Button Grid.Column="2" Content="Pin search" Click="OnPinCurrentFeed"
+                  IsVisible="{Binding IsSearchPage}" VerticalAlignment="Center" />
         </Grid>
       </Border>
 
@@ -110,10 +117,11 @@
       </Border>
 
       <Border DockPanel.Dock="Top" Margin="34,0,34,8" IsVisible="{Binding HasHiddenPosts}">
-        <Grid ColumnDefinitions="*,Auto">
+        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
           <TextBlock Text="{Binding FilterNote}" Classes="dim" FontSize="12" VerticalAlignment="Center" />
           <Button Grid.Column="1" Content="Show hidden" FontSize="12" Padding="10,4"
                   Command="{Binding ShowFilteredCommand}" />
+          <Button Grid.Column="2" Content="Filter settings" FontSize="12" Click="OnFilterSettings" />
         </Grid>
       </Border>
 
@@ -124,6 +132,9 @@
           <Button Content="Queue" Classes="chip" FontSize="13" Command="{Binding SetLibraryCommand}" CommandParameter="queue" />
         </StackPanel>
       </Border>
+
+      <ProgressBar DockPanel.Dock="Top" IsIndeterminate="True"
+                   IsVisible="{Binding IsLoading}" Margin="34,0,34,8" />
 
       <Border DockPanel.Dock="Bottom" Padding="34,10" IsVisible="{Binding HasStatus}">
         <Grid ColumnDefinitions="*,Auto">
@@ -162,6 +173,9 @@
         </StackPanel>
       </Border>
 
+      <Button DockPanel.Dock="Bottom" Content="Load more posts" Command="{Binding LoadMoreCommand}"
+              IsVisible="{Binding HasMore}" HorizontalAlignment="Center" Margin="0,6,0,10" />
+
       <Grid>
         <ListBox Name="FeedList" Classes="feed" ItemsSource="{Binding Posts}"
                  IsVisible="{Binding ShowFeed}"
@@ -169,7 +183,7 @@
                  DoubleTapped="OnOpenPost">
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="vm:PostItemViewModel">
-              <Border Classes="card" Margin="0,0,0,14" MaxWidth="640">
+              <Border Classes="card" Margin="12,0" MaxWidth="640">
                 <StackPanel Spacing="10">
                   <Grid ColumnDefinitions="Auto,*,Auto">
                     <Border Width="40" Height="40" CornerRadius="20" ClipToBounds="True"
@@ -244,21 +258,30 @@
   
                   <TextBlock Text="{Binding TagsText}" Classes="tag" FontSize="13" IsVisible="{Binding HasTags}" />
   
-                  <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto" Margin="0,4,0,0">
-                    <Button Grid.Column="0" Classes="actionlike" Command="{Binding ToggleLikeCommand}"
-                            Background="Transparent" Padding="2,0" FontSize="17" Foreground="#9AA7B4">
-                      <TextBlock Text="{Binding LikeGlyph}" Foreground="#9AA7B4" FontSize="17" />
-                    </Button>
-                    <TextBlock Grid.Column="1" Text="{Binding LikeCountLabel}" Classes="dim" FontSize="13"
-                               Margin="5,3,16,0" />
-                    <Button Grid.Column="2" Background="Transparent" Padding="2,0" Click="OnReblog"
-                            VerticalAlignment="Center">
-                      <TextBlock Text="⇄" FontSize="15" Foreground="#9AA7B4" />
-                    </Button>
-                    <TextBlock Grid.Column="3" Text="{Binding ReblogLabel}" Classes="dim" FontSize="13" Margin="5,3,0,0" />
-                    <TextBlock Grid.Column="5" Text="{Binding NotesLabel}" Classes="dim" FontSize="13"
-                               VerticalAlignment="Center" />
-                  </Grid>
+                  <Border BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="0,1,0,0" Padding="0,5,0,0">
+                    <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="6">
+                      <Button Classes="postAction" Content="{Binding NotesLabel}" Click="OnOpenNotes"
+                              HorizontalAlignment="Left" />
+                      <Button Grid.Column="1" Classes="postAction" Command="{Binding ToggleLikeCommand}"
+                              AutomationProperties.Name="Toggle like" ToolTip.Tip="Toggle like">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                          <TextBlock Text="{Binding LikeGlyph}" FontSize="17" />
+                          <TextBlock Text="{Binding LikeCountLabel}" Classes="dim" VerticalAlignment="Center" />
+                        </StackPanel>
+                      </Button>
+                      <Button Grid.Column="2" Classes="postAction" Click="OnReblog"
+                              AutomationProperties.Name="Reblog" ToolTip.Tip="Reblog">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                          <TextBlock Text="⇄" FontSize="17" />
+                          <TextBlock Text="{Binding ReblogLabel}" Classes="dim" VerticalAlignment="Center" />
+                        </StackPanel>
+                      </Button>
+                      <Button Grid.Column="3" Classes="postAction" Classes.saved="{Binding IsBookmarked}"
+                              Content="{Binding BookmarkGlyph}" FontSize="17" Click="OnToggleBookmark"
+                              AutomationProperties.Name="{Binding BookmarkActionLabel}"
+                              ToolTip.Tip="{Binding BookmarkActionLabel}" />
+                    </Grid>
+                  </Border>
                 </StackPanel>
               </Border>
             </DataTemplate>
@@ -379,7 +402,7 @@
             </ScrollViewer>
   
             <Grid IsVisible="{Binding InThread}" ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0,10,0,0">
-              <TextBox Grid.Column="0" Text="{Binding ComposerText}" Watermark="Write a message…" />
+              <TextBox Grid.Column="0" Text="{Binding ComposerText}" PlaceholderText="Write a message…" />
               <Button Grid.Column="1" Classes="accent" Content="Send"
                       Command="{Binding SendMessageCommand}" IsEnabled="{Binding !IsSending}" />
             </Grid>
@@ -388,22 +411,10 @@
       </Grid>
     </DockPanel>
 
-    <!-- right rail -->
-    <Border Grid.Column="2" Background="{DynamicResource RailBrush}" Padding="22">
+    <!-- discovery rail -->
+    <Border Name="DiscoveryRail" Grid.Column="2" Background="{DynamicResource RailBrush}" Padding="20">
       <StackPanel Spacing="16">
-        <Border Classes="card" Padding="18">
-          <StackPanel Spacing="10">
-            <TextBlock Text="#art" FontSize="26" FontWeight="Bold" />
-            <TextBlock Text="Art is different for everyone, but what stays universal is versatility, beauty, and a fearlessness to try something new"
-                       Classes="dim" FontSize="13" />
-            <TextBlock Text="39M followers / 8.1K recent posts" Classes="dim" FontSize="12" />
-            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-              <Button Grid.Column="0" Classes="accent" Content="Follow" HorizontalAlignment="Stretch" />
-              <Button Grid.Column="1" Content="New post" HorizontalAlignment="Stretch" />
-            </Grid>
-          </StackPanel>
-        </Border>
-        <TextBlock Text="Trending now" Classes="dim" FontSize="11" />
+        <TextBlock Text="Trending tags" Classes="heading" />
         <WrapPanel Orientation="Horizontal">
           <ItemsControl ItemsSource="{Binding TrendingTags}">
             <ItemsControl.ItemsPanel>
@@ -416,10 +427,6 @@
             </ItemsControl.ItemTemplate>
           </ItemsControl>
         </WrapPanel>
-        <Button Content="Load more" Command="{Binding LoadMoreCommand}" IsVisible="{Binding HasMore}"
-                HorizontalAlignment="Stretch" />
-        <TextBlock Text="Scaffold: read-only feed. Write actions, media playback, DMs and composer land in the next rounds."
-                   Classes="dim" FontSize="11" TextWrapping="Wrap" />
       </StackPanel>
     </Border>
   </Grid>

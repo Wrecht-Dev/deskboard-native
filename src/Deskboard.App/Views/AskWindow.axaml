@@ -10,7 +10,7 @@
     <TextBlock Text="{Binding Title}" Classes="heading" />
     <TextBlock Text="Your question" Classes="dim" FontSize="12" />
     <TextBox Text="{Binding Question}" AcceptsReturn="True" TextWrapping="Wrap" Height="150"
-             Watermark="What do you want to ask?" />
+             PlaceholderText="What do you want to ask?" />
     <CheckBox Content="Ask anonymously" IsChecked="{Binding Anonymous}" IsVisible="{Binding AllowAnonymous}" />
     <TextBlock Text="{Binding Error}" Foreground="#FF7B7B" FontSize="13" IsVisible="{Binding HasError}" />
     <TextBlock Text="{Binding Hint}" Classes="dim" FontSize="12" />

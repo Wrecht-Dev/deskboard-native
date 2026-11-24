@@ -11,11 +11,22 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 APP="$ROOT/src/Deskboard.App/Deskboard.App.csproj"
 STAGE="$OUT/stage-$RID"
 NAME="deskboard-native-$RID"
-VERSION="${VERSION:-0.2.6}"
+case "$RID" in
+  linux-x64|win-x64|osx-arm64|osx-x64) ;;
+  *) echo "unsupported rid: $RID" >&2; exit 1 ;;
+esac
+VERSION="${VERSION:-$(dotnet msbuild "$APP" -nologo -getProperty:Version)}"
+if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ ]]; then
+  echo "invalid release version: $VERSION" >&2
+  exit 1
+fi
 
-rm -rf "$STAGE"; mkdir -p "$STAGE/$NAME"
+BUNDLE_VERSION="${VERSION%%-*}"
 
-dotnet publish "$APP" -c Release -r "$RID" --self-contained true -o "$STAGE/publish" >/dev/null
+rm -rf "$STAGE"
+mkdir -p "$STAGE/$NAME"
+
+dotnet publish "$APP" -c Release -r "$RID" --self-contained true -p:Version="$VERSION" -o "$STAGE/publish" >&2
 
 case "$RID" in
   linux-*)
@@ -35,7 +46,8 @@ LAUNCH
     ;;
   win-*)
     cp -r "$STAGE/publish/." "$STAGE/$NAME/"
-    (cd "$STAGE" && zip -qr "$OUT/$NAME.zip" "$NAME")
+    (cd "$STAGE" && zip -qr "$STAGE/$NAME.zip" "$NAME")
+    mv -f "$STAGE/$NAME.zip" "$OUT/$NAME.zip"
     echo "$OUT/$NAME.zip"
     ;;
   osx-*)
@@ -43,15 +55,15 @@ LAUNCH
     mkdir -p "$APPDIR/Contents/MacOS" "$APPDIR/Contents/Resources"
     cp -r "$STAGE/publish/." "$APPDIR/Contents/MacOS/"
     cp "$ROOT/assets/icon.png" "$APPDIR/Contents/Resources/AppIcon.png"
-    cat > "$APPDIR/Contents/Info.plist" <<'PLIST'
+    cat > "$APPDIR/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
   <key>CFBundleName</key><string>Deskboard</string>
   <key>CFBundleIdentifier</key><string>dev.wrecht.deskboard.native</string>
-  <key>CFBundleVersion</key><string>${VERSION}</string>
-  <key>CFBundleShortVersionString</key><string>${VERSION}</string>
+  <key>CFBundleVersion</key><string>${BUNDLE_VERSION}</string>
+  <key>CFBundleShortVersionString</key><string>${BUNDLE_VERSION}</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleExecutable</key><string>Deskboard.App</string>
   <key>LSMinimumSystemVersion</key><string>12.0</string>

@@ -6,11 +6,11 @@
         Background="{DynamicResource PageBrush}">
   <StackPanel Margin="22" Spacing="10">
     <TextBlock Text="Pin a tab" Classes="heading" />
-    <TextBlock Text="A pinned tab can aggregate a tag, a search, or every tag you follow — and remembers its own Latest/Top sort."
+    <TextBlock Text="Pin a tag, save a search, or browse followed tags in one feed."
                Classes="dim" FontSize="12" TextWrapping="Wrap" />
 
     <TextBlock Text="Title" Classes="dim" FontSize="11" />
-    <TextBox Name="TitleBox" Watermark="e.g. Art" />
+    <TextBox Name="TitleBox" PlaceholderText="e.g. Art" />
     <TextBlock Text="Source" Classes="dim" FontSize="11" />
     <ComboBox Name="KindBox" SelectedIndex="0" HorizontalAlignment="Stretch">
       <ComboBoxItem Content="Tag" />
@@ -18,7 +18,7 @@
       <ComboBoxItem Content="All followed tags" />
     </ComboBox>
     <TextBlock Text="Tag or query (not used for all followed tags)" Classes="dim" FontSize="11" />
-    <TextBox Name="ValueBox" Watermark="art" />
+    <TextBox Name="ValueBox" PlaceholderText="art" />
     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
       <TextBlock Text="Sort" Classes="dim" FontSize="11" VerticalAlignment="Center" />
       <ComboBox Grid.Column="1" Name="SortBox" SelectedIndex="0" HorizontalAlignment="Stretch">

@@ -4,8 +4,8 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
-using Avalonia.Controls;
 using Deskboard.App.ViewModels;
+using Deskboard.App.Services;
 
 namespace Deskboard.App.Views;
 
@@ -15,6 +15,11 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         AddHandler(ScrollViewer.ScrollChangedEvent, OnScrollChanged);
+        SizeChanged += (_, e) =>
+        {
+            DiscoveryRail.IsVisible = e.NewSize.Width >= 1180;
+            Workspace.ColumnDefinitions[2].Width = new GridLength(DiscoveryRail.IsVisible ? 260 : 0);
+        };
     }
 
     private async void OnReblog(object? sender, RoutedEventArgs e)
@@ -68,13 +73,26 @@ public partial class MainWindow : Window
             await vm.DeletePostAsync(item);
     }
 
-    private async void OnSettings(object? sender, RoutedEventArgs e)
+    private async void OnSettings(object? sender, RoutedEventArgs e) => await ShowSettingsAsync();
+
+    private async void OnFilterSettings(object? sender, RoutedEventArgs e) => await ShowSettingsAsync(startAtFilters: true);
+
+    private async System.Threading.Tasks.Task ShowSettingsAsync(bool startAtFilters = false)
     {
         if (DataContext is not MainViewModel vm) return;
         await vm.EnsureIdentityAsync();
         var settings = new SettingsViewModel(vm.Client, vm.Identity, vm.Blogs, vm.Filters);
         var window = new SettingsWindow { DataContext = settings };
+        if (startAtFilters) window.StartAtKeywordFilters();
+        var wasSignedIn = vm.Client.HasSession;
+        var filtersEnabled = vm.Filters.Enabled;
+        var mutedWords = vm.Filters.MutedWords.ToArray();
         await window.ShowDialog(this);
+        if (wasSignedIn != vm.Client.HasSession)
+            DataContext = new MainViewModel(vm.Client);
+        else if (vm.HideAdult != settings.HideAdult || filtersEnabled != vm.Filters.Enabled ||
+                 !mutedWords.SequenceEqual(vm.Filters.MutedWords))
+            await vm.ApplyFiltersAsync(settings.HideAdult);
     }
 
     private async void OnSubmitPost(object? sender, RoutedEventArgs e)
@@ -147,6 +165,30 @@ public partial class MainWindow : Window
             _ = vm.OpenPinnedTabAsync(tab);
     }
 
+    private void OnPinCurrentFeed(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainViewModel vm || !(vm.IsTagPage || vm.IsSearchPage)) return;
+        var kind = vm.IsTagPage ? "tag" : "search";
+        var value = vm.IsTagPage ? vm.Headline.TrimStart('#') : vm.SearchQuery;
+        var title = vm.IsTagPage ? vm.Headline : vm.SearchQuery;
+        var existing = vm.PinnedTabs.FirstOrDefault(tab => tab.Kind == kind &&
+            tab.Value.Equals(value, StringComparison.OrdinalIgnoreCase));
+        if (existing is not null)
+        {
+            _ = vm.OpenPinnedTabAsync(existing);
+            return;
+        }
+        vm.AddPinnedTab(new PinnedTab
+        {
+            Kind = kind,
+            Title = title,
+            Value = value,
+            Sort = vm.IsTagPage && vm.IsTop ? "top" : "latest",
+        });
+    }
+
+    private void OnOpenNotes(object? sender, RoutedEventArgs e) => OpenDetail(sender);
+
     private async void OnAddPinned(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not MainViewModel vm) return;
@@ -201,6 +243,14 @@ public partial class MainWindow : Window
     {
         if (e.Key != Avalonia.Input.Key.Enter) return;
         if (DataContext is MainViewModel vm) _ = vm.SearchAsync(SearchBox.Text ?? "");
+    }
+
+    private async void OnSignIn(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainViewModel vm) return;
+        var window = new LoginWindow { DataContext = new LoginViewModel(vm.Client) };
+        await window.ShowDialog(this);
+        if (vm.Client.HasSession) DataContext = new MainViewModel(vm.Client);
     }
 
     private async void OnCreate(object? sender, RoutedEventArgs e)

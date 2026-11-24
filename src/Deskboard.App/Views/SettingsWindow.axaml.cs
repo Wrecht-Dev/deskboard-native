@@ -12,19 +12,17 @@ public partial class SettingsWindow : Window
         DataContextChanged += (_, _) =>
         {
             if (DataContext is SettingsViewModel vm)
-            {
                 vm.CloseRequested += (_, _) => Close();
-                vm.PropertyChanged += (_, e) =>
-                {
-                    if (e.PropertyName == nameof(SettingsViewModel.IsDark)) RefreshThemeButtons();
-                };
-            }
         };
     }
 
-    private void RefreshThemeButtons()
+    public void StartAtKeywordFilters()
     {
-        // the dark segment is hidden when light is active; keep the label pair stable
+        Opened += (_, _) =>
+        {
+            KeywordInput.BringIntoView();
+            KeywordInput.Focus();
+        };
     }
 
     private async void OnSignIn(object? sender, RoutedEventArgs e)
@@ -33,10 +31,5 @@ public partial class SettingsWindow : Window
         var login = new LoginViewModel(vm.Client);
         var window = new LoginWindow { DataContext = login };
         await window.ShowDialog(this);
-    }
-
-    private void OnDark(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is SettingsViewModel vm) vm.SetThemeCommand.Execute("dark");
     }
 }

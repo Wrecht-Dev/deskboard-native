@@ -12,9 +12,9 @@
     <TextBlock Text="Your credentials go straight to tumblr.com. Deskboard never stores your password and never sends it anywhere else."
                Classes="dim" FontSize="12" TextWrapping="Wrap" />
 
-    <TextBox Text="{Binding Email}" Watermark="Email or username" />
-    <TextBox Text="{Binding Password}" Watermark="Password" PasswordChar="•" />
-    <TextBox Text="{Binding TwoFactorCode}" Watermark="Two-factor code"
+    <TextBox Text="{Binding Email}" PlaceholderText="Email or username" />
+    <TextBox Text="{Binding Password}" PlaceholderText="Password" PasswordChar="•" />
+    <TextBox Text="{Binding TwoFactorCode}" PlaceholderText="Two-factor code"
              IsVisible="{Binding NeedsTwoFactor}" />
 
     <Button Classes="accent" Content="Sign in" Command="{Binding SignInCommand}"

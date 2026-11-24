@@ -18,7 +18,7 @@ public sealed class PinnedTab
     public string Value { get; set; } = "";     // tag name or query
     public string Sort { get; set; } = "latest"; // latest | top
 
-    public string SortLabel => Sort == "top" ? "Top" : "Latest";
+    public string SortLabel => Kind == "search" ? "Relevance" : Sort == "top" ? "Top" : "Latest";
 
     public string KindLabel => Kind switch
     {

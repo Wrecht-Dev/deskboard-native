@@ -21,7 +21,7 @@
     <Border DockPanel.Dock="Bottom" Padding="18,12" Background="{DynamicResource RailBrush}"
             IsVisible="{Binding CanReply}">
       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-        <TextBox Grid.Column="0" Text="{Binding ReplyText}" Watermark="Reply to this post…"
+        <TextBox Grid.Column="0" Text="{Binding ReplyText}" PlaceholderText="Reply to this post…"
                  AcceptsReturn="False" />
         <Button Grid.Column="1" Classes="accent" Content="Reply"
                 Command="{Binding ReplyCommand}" IsEnabled="{Binding !IsReplying}" />

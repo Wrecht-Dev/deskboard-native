@@ -50,12 +50,12 @@ public static class FirefoxCookies
     private static Dictionary<string, string> ReadProfile(string dbPath)
     {
         var jar = new Dictionary<string, string>();
-        var copy = Path.Combine(Path.GetTempPath(), "deskboard-fx-" + Guid.NewGuid().ToString("N") + ".sqlite");
-        try { File.Copy(dbPath, copy, overwrite: true); }
-        catch (IOException) { return jar; }
-
+        DirectoryInfo? temp = null;
         try
         {
+            temp = Directory.CreateTempSubdirectory("deskboard-fx-");
+            var copy = Path.Combine(temp.FullName, "cookies.sqlite");
+            File.Copy(dbPath, copy);
             var start = new ProcessStartInfo("sqlite3")
             {
                 RedirectStandardOutput = true,
@@ -87,7 +87,7 @@ public static class FirefoxCookies
         catch (Exception) { /* sqlite3 missing or profile unreadable */ }
         finally
         {
-            try { File.Delete(copy); } catch (IOException) { }
+            try { temp?.Delete(recursive: true); } catch (IOException) { }
         }
         return jar;
     }

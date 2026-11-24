@@ -51,12 +51,12 @@
         </ComboBox>
       </StackPanel>
       <TextBox Text="{Binding Text}" AcceptsReturn="True" TextWrapping="Wrap" Height="200"
-               Watermark="What's on your mind?" />
+               PlaceholderText="What's on your mind?" />
       <StackPanel Spacing="6" IsVisible="{Binding IsLink}">
-        <TextBox Text="{Binding LinkUrl}" Watermark="https://…" />
-        <TextBox Text="{Binding LinkTitle}" Watermark="Link title (optional)" />
+        <TextBox Text="{Binding LinkUrl}" PlaceholderText="https://…" />
+        <TextBox Text="{Binding LinkTitle}" PlaceholderText="Link title (optional)" />
       </StackPanel>
-      <TextBox Text="{Binding Tags}" Watermark="tags: comma, separated" />
+      <TextBox Text="{Binding Tags}" PlaceholderText="tags: comma, separated" />
       <TextBlock Text="{Binding MediaLabel}" Classes="dim" FontSize="12" />
     </StackPanel>
   </DockPanel>

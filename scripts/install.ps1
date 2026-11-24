@@ -9,27 +9,53 @@ $ErrorActionPreference = "Stop"
 $Repo = "Wrecht-Dev/deskboard-native"
 $Asset = "deskboard-native-win-x64.zip"
 
-if ($LocalZip) {
-    $zip = $LocalZip
-} else {
-    $url = if ($Version -eq "latest") {
-        "https://github.com/$Repo/releases/latest/download/$Asset"
-    } else {
-        "https://github.com/$Repo/releases/download/$Version/$Asset"
-    }
-    $zip = Join-Path $env:TEMP $Asset
-    Write-Host "Downloading $Asset..."
-    Invoke-WebRequest -Uri $url -OutFile $zip
-}
-
 $stage = Join-Path $env:TEMP ("deskboard-" + [guid]::NewGuid().ToString("N"))
-Write-Host "Installing to $InstallDir"
-if (Test-Path $InstallDir) { Remove-Item $InstallDir -Recurse -Force }
-Expand-Archive -Path $zip -DestinationPath $stage
-$inner = Get-ChildItem $stage -Directory | Select-Object -First 1
-New-Item -ItemType Directory -Force -Path (Split-Path $InstallDir) | Out-Null
-Move-Item $inner.FullName $InstallDir
-Remove-Item $stage -Recurse -Force
+New-Item -ItemType Directory -Path $stage | Out-Null
+try {
+    if ($LocalZip) {
+        $zip = $LocalZip
+    } else {
+        $url = if ($Version -eq "latest") {
+            "https://github.com/$Repo/releases/latest/download/$Asset"
+        } else {
+            "https://github.com/$Repo/releases/download/$Version/$Asset"
+        }
+        $zip = Join-Path $stage $Asset
+        Write-Host "Downloading $Asset..."
+        Invoke-WebRequest -Uri $url -OutFile $zip
+    }
+
+    $payload = Join-Path $stage "payload"
+    Expand-Archive -LiteralPath $zip -DestinationPath $payload
+    $inner = Join-Path $payload "deskboard-native-win-x64"
+    if (-not (Test-Path -LiteralPath (Join-Path $inner "Deskboard.App.exe") -PathType Leaf)) {
+        throw "Archive is missing Deskboard.App.exe."
+    }
+
+    $InstallDir = [System.IO.Path]::GetFullPath($InstallDir).TrimEnd([char[]]@('\', '/'))
+    $backup = "$InstallDir.old-$([guid]::NewGuid().ToString('N'))"
+    Write-Host "Installing to $InstallDir"
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $InstallDir) | Out-Null
+    if (Test-Path -LiteralPath $InstallDir) {
+        if (-not (Test-Path -LiteralPath (Join-Path $InstallDir "Deskboard.App.exe") -PathType Leaf)) {
+            throw "Choose an empty installation path or an existing Deskboard installation."
+        }
+        Move-Item -LiteralPath $InstallDir -Destination $backup
+    }
+    try {
+        Move-Item -LiteralPath $inner -Destination $InstallDir
+    } catch {
+        if (Test-Path -LiteralPath $backup) {
+            Move-Item -LiteralPath $backup -Destination $InstallDir
+        }
+        throw
+    }
+    if (Test-Path -LiteralPath $backup) {
+        Remove-Item -LiteralPath $backup -Recurse -Force
+    }
+} finally {
+    Remove-Item -LiteralPath $stage -Recurse -Force
+}
 
 $exe = Join-Path $InstallDir "Deskboard.App.exe"
 # Start menu shortcut

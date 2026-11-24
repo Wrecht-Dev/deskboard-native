@@ -21,7 +21,7 @@ die()  { printf '\033[31m✗\033[0m %s\n' "$1" >&2; exit 1; }
 
 case "$(uname -s)" in
   Linux)  OS="linux" ;;
-  Darwin) OS="macos" ;;
+  Darwin) OS="osx" ;;
   *) die "Unsupported OS: $(uname -s). On Windows use scripts/install.ps1." ;;
 esac
 
@@ -51,41 +51,73 @@ else
 fi
 
 say "Installing to $INSTALL_DIR"
-mkdir -p "$INSTALL_DIR"
 tar -xzf "$TMP/$ASSET" -C "$TMP"
 SRC="$TMP/deskboard-native-$OS-$ARCH"
-[ -d "$SRC" ] || SRC="$(find "$TMP" -maxdepth 2 -type d -name 'deskboard-native-*' | head -1)"
-[ -n "$SRC" ] && [ -d "$SRC" ] || die "Archive has an unexpected layout."
+if [ "$OS" = "osx" ]; then
+  ENTRY="Deskboard.app/Contents/MacOS/Deskboard.App"
+else
+  ENTRY="Deskboard.App"
+  [ -f "$SRC/deskboard-native.desktop" ] && [ -f "$SRC/icon.png" ] ||
+    die "Archive is missing Linux desktop integration files."
+fi
+[ -x "$SRC/$ENTRY" ] || die "Archive is missing $ENTRY."
 
-rm -rf "$INSTALL_DIR"
-mkdir -p "$(dirname "$INSTALL_DIR")"
-cp -r "$SRC" "$INSTALL_DIR"
+install_tree() (
+  local source="$1" target="$2" entry="$3" stage
+  mkdir -p "$(dirname "$target")"
+  stage="$(mktemp -d "$(dirname "$target")/.deskboard-install.XXXXXX")"
+  trap 'rm -rf "$stage/new"; rmdir "$stage" 2>/dev/null || true' EXIT
+  cp -R "$source" "$stage/new"
+  if [ -e "$target" ] || [ -L "$target" ]; then
+    [ -x "$target/$entry" ] || die "Choose an unused path or an existing Deskboard installation: $target"
+    # Older installs share this directory with the app's local session store.
+    if [ -f "$target/cookies.json" ]; then
+      (umask 077; cat "$target/cookies.json" > "$stage/new/cookies.json")
+    fi
+    mv "$target" "$stage/old"
+  fi
+  if ! mv "$stage/new" "$target"; then
+    if [ -e "$stage/old" ]; then
+      mv "$stage/old" "$target" || die "Previous installation is at $stage/old"
+    fi
+    die "Could not install to $target"
+  fi
+  rm -rf "$stage/old"
+)
 
-if [ "$OS" = "macos" ] && [ -d "$INSTALL_DIR/Deskboard.app" ]; then
+INSTALL_DIR="${INSTALL_DIR%/}"
+[ -n "$INSTALL_DIR" ] || die "Installation directory must not be the filesystem root."
+install_tree "$SRC" "$INSTALL_DIR" "$ENTRY"
+
+if [ "$OS" = "osx" ]; then
   APP_DIR="$HOME/Applications"
-  mkdir -p "$APP_DIR"
-  rm -rf "$APP_DIR/Deskboard.app"
-  cp -r "$INSTALL_DIR/Deskboard.app" "$APP_DIR/Deskboard.app"
+  install_tree "$INSTALL_DIR/Deskboard.app" "$APP_DIR/Deskboard.app" "Contents/MacOS/Deskboard.App"
   ok "Installed app: $APP_DIR/Deskboard.app"
 fi
 
 mkdir -p "$BIN_DIR"
 LAUNCH="$BIN_DIR/deskboard-native"
-if [ "$OS" = "macos" ] && [ -x "$INSTALL_DIR/Deskboard.app/Contents/MacOS/Deskboard.App" ]; then
-  printf '#!/usr/bin/env bash\nexec "%s" "$@"\n' "$INSTALL_DIR/Deskboard.app/Contents/MacOS/Deskboard.App" > "$LAUNCH"
+if [ "$OS" = "osx" ] && [ -x "$INSTALL_DIR/Deskboard.app/Contents/MacOS/Deskboard.App" ]; then
+  printf '#!/usr/bin/env bash\nexec %q "$@"\n' "$INSTALL_DIR/Deskboard.app/Contents/MacOS/Deskboard.App" > "$LAUNCH"
 else
-  printf '#!/usr/bin/env bash\nexec "%s" "$@"\n' "$INSTALL_DIR/Deskboard.App" > "$LAUNCH"
+  printf '#!/usr/bin/env bash\nexec %q "$@"\n' "$INSTALL_DIR/Deskboard.App" > "$LAUNCH"
 fi
-chmod +x "$LAUNCH" "$INSTALL_DIR"/* 2>/dev/null || true
+chmod +x "$LAUNCH"
 
 if [ "$OS" = "linux" ]; then
-  APPS="$HOME/.local/share/applications"
-  ICONS="$HOME/.local/share/icons/hicolor/256x256/apps"
+  DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}"
+  APPS="$DATA_DIR/applications"
+  ICONS="$DATA_DIR/icons/hicolor/256x256/apps"
   mkdir -p "$APPS" "$ICONS"
-  sed "s|^Exec=.*|Exec=$LAUNCH|" "$INSTALL_DIR/deskboard-native.desktop" > "$APPS/deskboard-native.desktop"
+  while IFS= read -r line; do
+    case "$line" in
+      Exec=*) printf 'Exec="%s"\n' "$LAUNCH" ;;
+      *) printf '%s\n' "$line" ;;
+    esac
+  done < "$INSTALL_DIR/deskboard-native.desktop" > "$APPS/deskboard-native.desktop"
   cp "$INSTALL_DIR/icon.png" "$ICONS/deskboard-native.png"
   command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database "$APPS" 2>/dev/null || true
-  command -v gtk-update-icon-cache >/dev/null 2>&1 && gtk-update-icon-cache -q "$HOME/.local/share/icons/hicolor" 2>/dev/null || true
+  command -v gtk-update-icon-cache >/dev/null 2>&1 && gtk-update-icon-cache -q "$DATA_DIR/icons/hicolor" 2>/dev/null || true
 fi
 
 ok "Deskboard Native installed."

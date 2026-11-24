@@ -1,7 +1,22 @@
 # Beta status — evidence log
 
 This document records what was **actually executed**, not just implemented.
-Last sweep: v0.2.3, 53/53 tests.
+The historical runtime sweep below covered v0.2.3.
+
+## Release preparation after v0.2.6
+
+- The Release build completed with zero warnings, and all 56 tests passed via
+  xUnit's in-process executor. The sandbox blocked the standard test host's
+  loopback socket.
+- Linux x64, Windows x64 and macOS Intel self-contained archives were built.
+  The Linux installer passed clean-install and upgrade checks in a directory
+  containing spaces, including preservation of the native session file. The
+  Windows installer rejected a malformed archive and kept the previous app.
+  The macOS bundle's version and executable were checked in the archive.
+- Native GUI smoke tests are still pending. This environment could not open an
+  X11 display, and Apple Silicon runtime packs were unavailable in its offline
+  package cache. Successful Tumblr login and account-changing actions beyond
+  like/unlike still need live verification.
 
 ## Verified by execution
 

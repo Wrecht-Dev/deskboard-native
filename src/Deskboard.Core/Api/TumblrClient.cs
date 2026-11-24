@@ -41,7 +41,7 @@ public sealed partial class TumblrClient : IDisposable
     public bool HasSession => _cookies.Count > 0;
 
     /// <summary>When false, a 401 never silently imports the browser session.</summary>
-    public bool AutoRefreshSession { get; set; } = true;
+    public bool AutoRefreshSession { get; set; }
 
     public TumblrClient(string? configDir = null, string? dataDir = null, IDictionary<string, string>? cookies = null)
     {
@@ -53,6 +53,7 @@ public sealed partial class TumblrClient : IDisposable
         {
             AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
             UseCookies = false,
+            AllowAutoRedirect = false,
         };
         _http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
         _http.DefaultRequestHeaders.UserAgent.ParseAdd(
@@ -88,7 +89,7 @@ public sealed partial class TumblrClient : IDisposable
             using var request = NewRequest(HttpMethod.Get, Origin + "/");
             request.Headers.Accept.Clear();
             request.Headers.Accept.ParseAdd("text/html,application/xhtml+xml");
-            var html = await _http.SendAsync(request, ct).ConfigureAwait(false);
+            using var html = await _http.SendAsync(request, ct).ConfigureAwait(false);
             var text = await html.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
             var match = TokenRegex().Match(text);
             if (!match.Success) return false;
@@ -112,7 +113,7 @@ public sealed partial class TumblrClient : IDisposable
         request.Headers.Accept.ParseAdd("text/html,application/xhtml+xml");
         try
         {
-            var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
+            using var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
             var html = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
             var match = CsrfRegex().Match(html);
             if (match.Success) _csrf = match.Groups[1].Value;
@@ -124,7 +125,11 @@ public sealed partial class TumblrClient : IDisposable
     // ------------------------------------------------------------ plumbing --
     private HttpRequestMessage NewRequest(HttpMethod method, string url, HttpContent? content = null)
     {
-        var request = new HttpRequestMessage(method, url) { Content = content };
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) ||
+            !uri.GetLeftPart(UriPartial.Authority).Equals(Origin, StringComparison.OrdinalIgnoreCase))
+            throw new TumblrException("Tumblr returned an invalid request URL.", 0);
+
+        var request = new HttpRequestMessage(method, uri) { Content = content };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _token);
         request.Headers.TryAddWithoutValidation("X-Version", "1");
         if (_cookies.Count > 0)
@@ -135,27 +140,28 @@ public sealed partial class TumblrClient : IDisposable
     /// <summary>Forget the current session (cookies + persisted store).</summary>
     public void SignOut()
     {
+        CookieStore.SaveStore(new Dictionary<string, string>(), _dataDir);
         _cookies.Clear();
-        _sessionRefreshed = true;
+        _sessionRefreshed = false;
+        AutoRefreshSession = false;
         _csrf = null;
-        try
-        {
-            var path = Path.Combine(_dataDir, "cookies.json");
-            if (File.Exists(path)) File.Delete(path);
-        }
-        catch (Exception) { }
     }
 
-    /// <summary>Re-read the session from the user's Firefox profile (cookies rotate).</summary>
-    public bool RefreshSessionFromBrowser()
+    /// <summary>Import the session after the user chooses to use Firefox.</summary>
+    public bool RefreshSessionFromBrowser() => ImportBrowserSession(resetRefresh: true);
+
+    private bool ImportBrowserSession(bool resetRefresh)
     {
-        if (!AutoRefreshSession || _sessionRefreshed) return false;
-        _sessionRefreshed = true;
         var fresh = FirefoxCookies.ReadTumblrCookies();
         if (fresh.Count == 0) return false;
+        try { CookieStore.SaveStore(fresh, _dataDir); }
+        catch (IOException) { return false; }
+        catch (UnauthorizedAccessException) { return false; }
         _cookies.Clear();
         foreach (var (k, v) in fresh) _cookies[k] = v;
-        CookieStore.SaveStore(_cookies, _dataDir);
+        _csrf = null;
+        if (resetRefresh) _sessionRefreshed = false;
+        AutoRefreshSession = true;
         return true;
     }
 
@@ -279,15 +285,18 @@ public sealed partial class TumblrClient : IDisposable
             var fresh = response.Headers.TryGetValues("Set-Cookie", out var setCookies)
                 ? SetCookieParser.Parse(setCookies)
                 : new Dictionary<string, string>();
-            if (fresh.Count > 0)
-            {
-                foreach (var (name, value) in fresh) _cookies[name] = value;
-                CookieStore.SaveStore(_cookies, _dataDir);
-            }
+            if (fresh.Count == 0)
+                return new LoginResult { Status = LoginStatus.Failed, Message = "Tumblr did not return a session cookie." };
+
+            CookieStore.SaveStore(fresh, _dataDir);
+            _cookies.Clear();
+            foreach (var (name, value) in fresh) _cookies[name] = value;
+            _csrf = null;
+            AutoRefreshSession = false;
             return new LoginResult
             {
                 Status = LoginStatus.Success,
-                Message = fresh.Count > 0 ? "Signed in." : "Signed in, but no session cookie was returned.",
+                Message = "Signed in.",
                 CookieCount = fresh.Count,
             };
         }
@@ -1012,7 +1021,9 @@ public sealed partial class TumblrClient : IDisposable
     {
         await EnsureTokenAsync(ct).ConfigureAwait(false);
 
-        var url = path.StartsWith("http") ? path : ApiBase + (path.StartsWith('/') ? path : "/" + path);
+        var url = path.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? path
+            : path.StartsWith("/api/", StringComparison.Ordinal) ? Origin + path
+            : ApiBase + (path.StartsWith('/') ? path : "/" + path);
         if (query is { Count: > 0 })
         {
             var qs = string.Join("&", query.Where(kv => kv.Value is not null)
@@ -1045,13 +1056,17 @@ public sealed partial class TumblrClient : IDisposable
             {
                 throw new TumblrException("Tumblr timed out — retry in a moment.", 0);
             }
+            using var received = response;
             var body = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
             if (response.IsSuccessStatusCode)
                 return JsonDocument.Parse(string.IsNullOrWhiteSpace(body) ? "{}" : body);
 
             var status = (int)response.StatusCode;
-            if (status == 401 && attempt == 0 && RefreshSessionFromBrowser())
-                continue; // cookies refreshed from the browser; retry once
+            if (status == 401 && attempt == 0 && AutoRefreshSession && !_sessionRefreshed)
+            {
+                _sessionRefreshed = true;
+                if (ImportBrowserSession(resetRefresh: false)) continue;
+            }
 
             throw new TumblrException(Explain(status, body), status);
         }

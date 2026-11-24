@@ -40,8 +40,8 @@ public sealed partial class SettingsViewModel : ObservableObject
         foreach (var word in Filters.MutedWords) MutedWords.Add(word);
         Identity = string.IsNullOrEmpty(identity) ? "(signed out)" : identity;
         SessionState = client.HasSession
-            ? "Signed in with your browser session (cookies + CSRF verified on writes)."
-            : "No session found — sign-in is read from your Firefox profile on first request.";
+            ? "Signed in to Tumblr."
+            : "Signed out. Sign in or import a Tumblr session from Firefox.";
         foreach (var blog in blogs) Blogs.Add(blog);
         IsDark = AppSettings.Theme != "light";
     }
@@ -111,10 +111,17 @@ public sealed partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private void SignOut()
     {
-        _client.SignOut();
         HasStatus = true;
-        Status = "Signed out. Restart Deskboard to sign in again.";
-        SessionState = "Signed out.";
+        try
+        {
+            _client.SignOut();
+            Status = "Signed out.";
+            CloseRequested?.Invoke(this, EventArgs.Empty);
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException)
+        {
+            Status = $"Couldn’t save sign-out: {ex.Message}";
+        }
     }
 
     [RelayCommand]

@@ -60,7 +60,7 @@
             <CheckBox Content="Filters enabled" IsChecked="{Binding FiltersEnabled}" />
             <CheckBox Content="Hide mature (18+) blogs from feeds" IsChecked="{Binding HideAdult}" />
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-              <TextBox Grid.Column="0" Text="{Binding NewMutedWord}" Watermark="word or phrase" />
+              <TextBox Grid.Column="0" Name="KeywordInput" AutomationProperties.Name="Muted word or phrase" Text="{Binding NewMutedWord}" PlaceholderText="Word or phrase" />
               <Button Grid.Column="1" Content="Add" Command="{Binding AddMutedWordCommand}" />
             </Grid>
             <ItemsControl ItemsSource="{Binding MutedWords}">
@@ -82,18 +82,16 @@
           <StackPanel Spacing="8">
             <TextBlock Text="Appearance" FontWeight="Bold" FontSize="15" />
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <Button Content="Dark" Classes="chip" Click="OnDark" IsVisible="{Binding IsDark}" />
-              <Button Content="Light" Classes="chip" Command="{Binding SetThemeCommand}" CommandParameter="light" />
+              <Button Content="Dark" Classes="chip" Classes.selected="{Binding IsDark}" Command="{Binding SetThemeCommand}" CommandParameter="dark" />
+              <Button Content="Light" Classes="chip" Classes.selected="{Binding !IsDark}" Command="{Binding SetThemeCommand}" CommandParameter="light" />
             </StackPanel>
-            <TextBlock Text="Dark follows Tumblr's desktop UI palette; Light is the white-rail variant."
-                       Classes="dim" FontSize="12" TextWrapping="Wrap" />
           </StackPanel>
         </Border>
 
         <Border Classes="card" Padding="16">
           <StackPanel Spacing="4">
             <TextBlock Text="About" FontWeight="Bold" FontSize="15" />
-            <TextBlock Text="Deskboard Native — early cross-platform rewrite (.NET 10 + Avalonia)."
+            <TextBlock Text="Deskboard Native · Unofficial Tumblr client"
                        Classes="dim" FontSize="12" TextWrapping="Wrap" />
             <TextBlock Text="github.com/Wrecht-Dev/deskboard-native" Classes="tag" FontSize="12" />
             <TextBlock Text="The Linux GTK proof of concept documents the API surface."
